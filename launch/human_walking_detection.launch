@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+
+    <node pkg="tf" type="static_transform_publisher" name="map2semanticMap" args="1.8 0.4 0 -0.23 0 0 /map /semanticMap 100" /> 
+
+    <node name="human_walking_detection" pkg="human_walking_detection" type="human_walking_detection" output="screen">
+     
+        <rosparam file="$(find human_walking_detection)/map/map.yaml"/>    
+        <!-- <rosparam>
+            a: 6
+        </rosparam> -->
+        
+        
+    </node>        
+        
+    
+</launch>
