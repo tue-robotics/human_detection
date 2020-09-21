@@ -6,9 +6,18 @@ void rosNode::initialize() {
     measuredHuman = n.advertise<visualization_msgs::Marker>("/HWD/measuredHuman",3);
     humanState = n.advertise<visualization_msgs::Marker>("/HWD/humanState",3);
     humanPV = n.advertise<human_walking_detection::PoseVel>("/HWD/trackedHuman",3);
+    tubeTop = n.advertise<human_walking_detection::tubes>("/HWD/tubes",3);
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
     n.getParam("/human_walking_detection/a",iMax);
-    subVirtualHuman = n.subscribe("/virtualHuman/pose",1000, &rosNode::updateMeasurement, this);
+    n.getParam("/human_walking_detection/real",real);
+    n.getParam("/human_walking_detection/xCamera",xCamera);
+    n.getParam("/human_walking_detection/yCamera",yCamera);
+    if (real) {
+        subHuman = n.subscribe("/Jetson/cameraDetections",1000, &rosNode::updateRealMeasurement, this);
+    } else {
+        subHuman = n.subscribe("/virtualHuman/pose",1000, &rosNode::updateFakeMeasurement, this);
+    }   
+    
     processMap();
     humanPosVel.x = 0.0;
     humanPosVel.y = 0.0;
@@ -16,9 +25,10 @@ void rosNode::initialize() {
     humanPosVel.vy = 0.0;
     measurement.push_back(0.0);
     measurement.push_back(0.0);
-    p1=0.0;
-    p2=0.0;
-    p3=0.0;
+    p1 = 0.0;
+    p2 = 0.0;
+    p3 = 0.0;
+    p4 = 0.0;
 }
 
 void rosNode::createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, visualization_msgs::Marker &marker) {
@@ -64,9 +74,16 @@ void rosNode::createLine(int i, double xL, double yL, double zL, double xR, doub
     marker.color.b = b;
 }
 
-void rosNode::updateMeasurement(const human_walking_detection::Pose& poseHuman) {
+void rosNode::updateFakeMeasurement(const human_walking_detection::Pose& poseHuman) {
     measurement[0] = poseHuman.x;
     measurement[1] = poseHuman.y;
+}
+
+void rosNode::updateRealMeasurement(const camera_detector::detections& poseHuman) {
+    if (poseHuman.detections.size()>0) {
+        measurement[0] = poseHuman.detections[0].x + xCamera;
+        measurement[1] = poseHuman.detections[0].y + yCamera;
+    }
 }
 
 void rosNode::processMap() {
@@ -102,6 +119,11 @@ void rosNode::processMap() {
 void rosNode::publishMap() {
     semantic_map.publish (markerArrayAoI);
     semantic_map.publish (markerArrayWalls);
+    semantic_map.publish (markerArrayStatic);
+}
+
+void rosNode::publishTube(human_walking_detection::tubes tube) {
+    tubeTop.publish(tube);
 }
 
 void rosNode::publishAoI() {
@@ -128,4 +150,8 @@ void rosNode::visualizeMeasuredHuman() {
     createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
     measuredHuman.publish (deleteAllMarker);
     measuredHuman.publish (markerA);
+}
+
+void rosNode::setMap(visualization_msgs::MarkerArray staticMap) {
+    markerArrayStatic = staticMap;
 }

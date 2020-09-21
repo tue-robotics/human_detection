@@ -8,6 +8,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf
+  armadillo_matrix
   #turtlesim
 )
 
@@ -20,6 +21,14 @@ add_message_files(
     walls.msg
     Pose.msg
     PoseVel.msg
+    transform.msg
+    singleTube.msg
+    tube.msg
+    tubes.msg
+    line.msg
+    lines.msg
+    human.msg
+    robot.msg
 )
 
 generate_messages(
@@ -29,7 +38,7 @@ generate_messages(
 
 catkin_package(
     INCLUDE_DIRS include
-    CATKIN_DEPENDS message_runtime std_msgs geometry_msgs nav_msgs roscpp  tf
+    CATKIN_DEPENDS message_runtime std_msgs geometry_msgs nav_msgs roscpp tf armadillo_matrix
 )
 
 ###########
@@ -42,8 +51,9 @@ include_directories(
 
 
 
-add_executable(human_walking_detection src/rosnode.cpp src/main.cpp src/functions.cpp)
+add_executable(human_walking_detection src/rosnode.cpp src/main.cpp src/functions.cpp src/functionsDisretizedMap.cpp)
 target_link_libraries(human_walking_detection ${catkin_LIBRARIES})
+add_dependencies(human_walking_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(napoleon_navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(human_walking_detection ${catkin_EXPORTED_TARGETS})
 

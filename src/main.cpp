@@ -11,6 +11,7 @@
 #include <ed_gui_server/objsPosVel.h>
 #include <functions.h>
 #include <rosnode.h>
+#include <functionsDiscretizedMap.h>
 
 using namespace std;
 
@@ -23,7 +24,10 @@ int main(int argc, char** argv)
 
     ros::init(argc, argv, "HWD");
     rosNode rosNode;
+    vectorFieldMap map;
+    visualization_msgs::MarkerArray mapMarkers;
     rosNode.initialize();
+    map.initializeMap();
 
     /// [loop start]
     int i=0;
@@ -46,20 +50,24 @@ int main(int argc, char** argv)
         i++;
 
 
-        if (i%500==0) {
+        // if (i%500==0) {
+            rosNode.publishTube(map.globalTube);
+            map.readMap(mapMarkers);
+            rosNode.setMap(mapMarkers);
+            cout<<"size: "<<mapMarkers.markers.size()<<endl;
             rosNode.publishMap();
-        }
+        // }
         rosNode.visualizeHuman();
         rosNode.visualizeMeasuredHuman();
-
-
+        // cout<<mapMarkers.markers[0].points[0].x<<" "<<mapMarkers.markers[0].points[0].x<<endl;
         
 
     // check current vector field
         // if (movedEnough) {}
         //     updateHypothesis();
         // }
-        ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0/20.0)); // Call ROS stream and wait at max 0.05 sec
+        // ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1000.0)); // Call ROS stream and wait 1000 sec if no new measurement
+        ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0)); // Call ROS stream and wait 1000 sec if no new measurement
 
         dt = ros::Time::now().toSec()-prevIt;
         updateKalman(A,H,P,Q,R,I,rosNode.humanPosVel,rosNode.measurement,dt);
@@ -72,7 +80,7 @@ int main(int argc, char** argv)
         if (rosNode.humanPosVel.x<2.5) {
             getLikelihood(1,0,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,-rosNode.humanPosVel.y,2.5-rosNode.humanPosVel.y,likelihood);
         } else if (rosNode.humanPosVel.x>4.8) {
-            getLikelihood(-1,0,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,-rosNode.humanPosVel.y,2.5-rosNode.humanPosVel.y,likelihood);
+            getLikelihood(-1,0,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,rosNode.humanPosVel.y-2.5,rosNode.humanPosVel.y,likelihood);
         } else {
             if (rosNode.humanPosVel.vx>0) {
                 curvedVectorField1(rosNode.humanPosVel.x, rosNode.humanPosVel.y, u,v,dist1,dist2);
@@ -92,11 +100,13 @@ int main(int argc, char** argv)
         getLikelihood(-1,0,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,rosNode.humanPosVel.y-2.5,rosNode.humanPosVel.y,likelihood);
         cout<< "likelihood left is equal to: " << likelihood<<endl;
         rosNode.p1 = likelihood;
+        rosNode.p4 = 0.2;
 
-        // totP = rosNode.p1 + rosNode.p2 + rosNode.p3;
-        // rosNode.p1 = rosNode.p1/totP;
-        // rosNode.p2 = rosNode.p2/totP;
-        // rosNode.p3 = rosNode.p3/totP;
+        totP = rosNode.p1 + rosNode.p2 + rosNode.p3 + rosNode.p4;
+        rosNode.p1 = rosNode.p1/totP;
+        rosNode.p2 = rosNode.p2/totP;
+        rosNode.p3 = rosNode.p3/totP;
+        rosNode.p4 = rosNode.p4/totP;
         rosNode.publishAoI();
 
 

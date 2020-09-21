@@ -1,6 +1,9 @@
 #rostopic pub 
 #/ropod/human_navigation_detection/map human_navigation_detection/walls 
 a: 100000
+real: false
+xCamera: 2
+yCamera: 1
 # testingP:
 #   a: 1.0
 #   b: 2.0
