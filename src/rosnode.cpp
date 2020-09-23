@@ -4,9 +4,11 @@
 void rosNode::initialize() {
     cout<<"Starting ROS publisher..."<<endl;
     measuredHuman = n.advertise<visualization_msgs::Marker>("/HWD/measuredHuman",3);
+    virtualRobot = n.advertise<visualization_msgs::Marker>("/HWD/virtualRobot",3);
     humanState = n.advertise<visualization_msgs::Marker>("/HWD/humanState",3);
     humanPV = n.advertise<human_walking_detection::PoseVel>("/HWD/trackedHuman",3);
     tubeTop = n.advertise<human_walking_detection::tubes>("/HWD/tubes",3);
+    hypothesesTop = n.advertise<human_walking_detection::hypotheses>("/HWD/hypotheses",3);
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
     n.getParam("/human_walking_detection/a",iMax);
     n.getParam("/human_walking_detection/real",real);
@@ -93,6 +95,7 @@ void rosNode::processMap() {
     markerA.header.frame_id = "/semanticMap";
     markerA.action = visualization_msgs::Marker::ADD;
     semantic_map = n.advertise<visualization_msgs::MarkerArray>("/HWD/semanticMap",3);
+    dynamic_map = n.advertise<visualization_msgs::MarkerArray>("/HWD/dynamicMap",3);
 // obtain already published map information from yaml file
     XmlRpc::XmlRpcValue walls,AoI;
     n.getParam("/human_walking_detection/walls",walls);
@@ -120,10 +123,26 @@ void rosNode::publishMap() {
     semantic_map.publish (markerArrayAoI);
     semantic_map.publish (markerArrayWalls);
     semantic_map.publish (markerArrayStatic);
+    dynamic_map.publish (markerArrayDynamic);
+}
+
+void rosNode::removeDynamicMap() {
+    deleteAllMarkerArray.markers.clear();
+    // for (int i=0;i<markerArrayDynamic.markers.size();i++) {
+        // deleteAllMarker = markerArrayDynamic.markers[i];
+        // deleteAllMarker.action = visualization_msgs::Marker::DELETE;
+    deleteAllMarkerArray.markers.push_back(deleteAllMarker);
+    // }
+    // deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
+    dynamic_map.publish (deleteAllMarkerArray);
 }
 
 void rosNode::publishTube(human_walking_detection::tubes tube) {
     tubeTop.publish(tube);
+}
+
+void rosNode::publishHypotheses(human_walking_detection::hypotheses hypotheses) {
+    hypothesesTop.publish(hypotheses);
 }
 
 void rosNode::publishAoI() {
@@ -140,20 +159,32 @@ void rosNode::publishHumanPV() {
 
 void rosNode::visualizeHuman() {
     markerA.ns = "humanState";
-    // createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,markerA);
-    createLine(1,6.5,8.2,0.0,6.5,8.2,1.8,0.0,0.0,1.0,0.3,markerA);
+    createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,markerA);
+    // createLine(1,6.5,8.2,0.0,6.5,8.2,1.8,0.0,0.0,1.0,0.3,markerA);
     humanState.publish (deleteAllMarker);
     humanState.publish (markerA);
 }
 
 void rosNode::visualizeMeasuredHuman() {
     markerA.ns = "measuredHuman";
-    // createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
-    createLine(1,4.5,8.4,0.0,4.5,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
+    createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
+    // createLine(1,4.5,8.4,0.0,4.5,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
     measuredHuman.publish (deleteAllMarker);
     measuredHuman.publish (markerA);
 }
 
-void rosNode::setMap(visualization_msgs::MarkerArray staticMap) {
+void rosNode::visualizeRobot() {
+    markerA.ns = "virtualRobot";
+    // createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
+    createLine(1,4.5,8.4,0.0,4.5,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
+    virtualRobot.publish (deleteAllMarker);
+    virtualRobot.publish (markerA);
+}
+
+void rosNode::setStaticMap(visualization_msgs::MarkerArray staticMap) {
     markerArrayStatic = staticMap;
+}
+
+void rosNode::setDynamicMap(visualization_msgs::MarkerArray dynamicMap) {
+    markerArrayDynamic = dynamicMap;
 }

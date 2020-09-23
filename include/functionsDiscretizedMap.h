@@ -9,6 +9,8 @@ using namespace std;
 #include <human_walking_detection/transform.h>
 #include <human_walking_detection/human.h>
 #include <human_walking_detection/robot.h>
+#include <human_walking_detection/hypothesis.h>
+#include <human_walking_detection/hypotheses.h>
 #include <iostream>
 #include <armadillo>
 #include <visualization_msgs/MarkerArray.h>
@@ -18,8 +20,10 @@ using namespace arma;
 class vectorFieldMap {
     public:
     void initializeMap();
-    void readMap(visualization_msgs::MarkerArray &markers);
+    void updateHypotheses(double x, double y, double vx, double vy);
+    void readMap(visualization_msgs::MarkerArray &staticMarkers,visualization_msgs::MarkerArray &dynamicMarkers);
     human_walking_detection::tubes globalTube;
+    human_walking_detection::hypotheses hypotheses;
 
     struct positionVars {
         float x;
@@ -54,8 +58,13 @@ class vectorFieldMap {
 
 
     private:
+    human_walking_detection::human human;
+    human_walking_detection::robot robot;
     visualization_msgs::MarkerArray staticMap;
-    
+    visualization_msgs::MarkerArray dynamicMap;
+    visualization_msgs::MarkerArray map;
+    graph G;
+
 
     struct TBCS {
         int i;
@@ -76,7 +85,7 @@ class vectorFieldMap {
     void linspace(double v1, double v2, int n, vector<double> &result);
     positionVars Fry(human_walking_detection::singleTube tube,double I1,double I2,bool rel);
     void clearTube(visualization_msgs::MarkerArray map);
-    void plotTube(human_walking_detection::singleTube tube, int n1, int n2,int subID, bool rel, bool sub, double r, double g, double b, visualization_msgs::MarkerArray &map);
+    void plotTube(human_walking_detection::singleTube tube, int n1, int n2,int subID, bool rel, bool sub, double r, double g, double b, double a, string ns, visualization_msgs::MarkerArray &map);
     void linesToTube(human_walking_detection::lines &lines,human_walking_detection::tubes &tubes,double id,TBCS TBC,bool marked);
     void createGraph(human_walking_detection::tubes tube, graph &G);
     void findPointInTube(human_walking_detection::tubes tubes, double x, double y, vector<int> &index);
@@ -91,5 +100,5 @@ class vectorFieldMap {
     bool inAvailableTube(vector<bool> openTubes,graph G,int toTube);
     void nextTube(int index,graph G,vector<int> &toTube, vector<double> &direction);
     void recursiveWalkA(vector<recursiveWalkStore> &store,vector<recursiveWalk> next,human_walking_detection::tubes tube,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax);
-
+    void validateHypotheses(double x, double y, double vx, double vy);
 };

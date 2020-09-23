@@ -12,6 +12,8 @@
 #include <human_walking_detection/tube.h>
 #include <human_walking_detection/singleTube.h>
 #include <human_walking_detection/tubes.h>
+#include <human_walking_detection/hypothesis.h>
+#include <human_walking_detection/hypotheses.h>
 
 using namespace std;
 
@@ -27,10 +29,13 @@ class rosNode {
 
         // Start ROS listener
         ros::Publisher semantic_map;
+        ros::Publisher dynamic_map;
         ros::Publisher measuredHuman;
+        ros::Publisher virtualRobot;
         ros::Publisher humanState;
         ros::Publisher humanPV;
         ros::Publisher tubeTop;
+        ros::Publisher hypothesesTop;
 
         ros::NodeHandle n;
 
@@ -39,9 +44,11 @@ class rosNode {
         human_walking_detection::PoseVel humanPosVel;
 
         visualization_msgs::Marker deleteAllMarker;
+        visualization_msgs::MarkerArray deleteAllMarkerArray;
         visualization_msgs::MarkerArray markerArrayWalls;
         visualization_msgs::MarkerArray markerArrayAoI;
         visualization_msgs::MarkerArray markerArrayStatic;
+        visualization_msgs::MarkerArray markerArrayDynamic;
         visualization_msgs::Marker markerA;
         human_walking_detection::tubes globalTube;
 
@@ -81,8 +88,15 @@ class rosNode {
 
         // void getHumanPosVel(human_walking_detection::PoseVel &humanPosVel_);
 
-        void setMap(visualization_msgs::MarkerArray staticMap);
+        void setStaticMap(visualization_msgs::MarkerArray staticMap);
+
+        void setDynamicMap(visualization_msgs::MarkerArray dynamicMap);
 
         void publishTube(human_walking_detection::tubes tube);
 
+        void publishHypotheses(human_walking_detection::hypotheses hypotheses);
+
+        void visualizeRobot();
+
+        void removeDynamicMap();
 };

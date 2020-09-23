@@ -1,4 +1,6 @@
 #include <functionsDiscretizedMap.h>
+#include <functions.h>
+
 
 // void getLikelihood(double u, double v, double v_x, double v_y, double d_side1, double d_side2, double &likelihood) {
 
@@ -368,7 +370,7 @@ void vectorFieldMap::clearTube(visualization_msgs::MarkerArray map) {
     map.markers.clear();
 }
 
-void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map) {
     vector<double> var;
     if (tube.curved) {
         linspace(0.0,tube.theta_tot,n1,var);
@@ -394,10 +396,10 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
     marker.header.frame_id = "/semanticMap";
     marker.action = visualization_msgs::Marker::ADD;
     marker.header.stamp = ros::Time();
-    marker.ns = "tubeSegments";
+    marker.ns = ns;
     // marker.type = visualization_msgs::Marker::POINTS;
     marker.type = visualization_msgs::Marker::LINE_STRIP;
-    marker.color.a = 1.0;
+    marker.color.a = a;
     marker.color.r = r;
     marker.color.g = g;
     marker.color.b = b;
@@ -503,8 +505,9 @@ for (int element = 0;element<lines.line.size()-1;element++) {
 lines.line = {};
 }
 
-void vectorFieldMap::readMap(visualization_msgs::MarkerArray &markers) {
-    markers = staticMap;
+void vectorFieldMap::readMap(visualization_msgs::MarkerArray &staticMarkers,visualization_msgs::MarkerArray &dynamicMarkers) {
+    staticMarkers = staticMap;
+    dynamicMarkers = dynamicMap;
 }
 
 void vectorFieldMap::FuvCurved(double dphidr,double dphidtheta,double theta,double r,double signlr,double &u, double &v) {
@@ -775,6 +778,7 @@ bool vectorFieldMap::inAvailableTube(vector<bool> openTubes,graph G,int toTube) 
 
 void vectorFieldMap::distEnd(double x,double y,vector<recursiveWalkStore> &store,vector<recursiveWalk> prev,vector<recursiveWalk> &next,human_walking_detection::tubes tube,graph G,vector<bool> openTubes,double dMax) {
     // next = [];
+    vector<int> indexTemp;
     vector<int> index;
     next.clear();
 
@@ -798,12 +802,23 @@ void vectorFieldMap::distEnd(double x,double y,vector<recursiveWalkStore> &store
     if (to.size()>0) {
         index = to;
     } else if (x!=-1.0 && y!=-1.0) {
-        findPointInTube(tube,x,y,index);
-        for (int i = 0; i<index.size();i++) {
-            storeElementTemp.push_back(index[i]);
-            storeElement.push_back(storeElementTemp);
-            storeElementTemp.clear();
-            d_old.push_back(0.0);
+        findPointInTube(tube,x,y,indexTemp);
+        for (int i = 0; i<indexTemp.size();i++) {
+            if (openTubes.size()>0) {
+                if (inAvailableTube(openTubes,G,indexTemp[i])) {
+                    storeElementTemp.push_back(indexTemp[i]);
+                    storeElement.push_back(storeElementTemp);
+                    storeElementTemp.clear();
+                    d_old.push_back(0.0);
+                    index.push_back(indexTemp[i]);
+                }
+            } else{
+                storeElementTemp.push_back(indexTemp[i]);
+                storeElement.push_back(storeElementTemp);
+                storeElementTemp.clear();
+                d_old.push_back(0.0);
+                index.push_back(indexTemp[i]);
+            }
         }
     }
     storeElementTemp.clear();
@@ -931,18 +946,19 @@ int i = 0;
 double l1, l2;
 
 
+
 while (!finished && seenTubes.size()==0) {
     for (int j = 0; j<store.size();j++) {
-        if (j>store.size()) {
+        if (j>=store.size()) {
             break;
         } else {
-            if (G.ALink[store[i].index]==G.ALink[store[j].index] && i!=j) {
-                l1 = store[i].path.size()-2; // CHECKEN -1 of -2
-                l2 = store[j].path.size()-2;
+            if ((G.ALink[store[i].index]==G.ALink[store[j].index]) && (i!=j)) {
+                l1 = store[i].path.size()-1; // CHECKEN -1 of -2
+                l2 = store[j].path.size()-1;
                 // length(store(j).path(1:end-1));
                 if (l1==l2) {
                     same = true;
-                    for (int z = 0; i<l1;i++) { 
+                    for (int z = 0; z<l1;z++) { 
                         if (store[i].path[z]!=store[j].path[z]) {
                             same = false;
                         }
@@ -955,17 +971,67 @@ while (!finished && seenTubes.size()==0) {
         }
     }
     i = i+1;
-    if (i>store.size()) {
+    if (i>=store.size()) {
         finished = true;
     }
 }
 
 }
 
+void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy) {
+    double u, v, likelihood, lTot;
+    vector<double> pTemp;
+    lTot = 0.0;
+    for (int i = 0; i<hypotheses.hypotheses.size(); i++) {
+        calcGradient(globalTube.tube[hypotheses.hypotheses[i].path[0]].main, x, y, u, v);
+        getLikelihood(u, v, vx, vy, -1.0, 1.0, likelihood);
+        pTemp.push_back(likelihood);
+        lTot = lTot + likelihood;
+    }
+    for (int i = 0; i<pTemp.size(); i++) {
+        hypotheses.hypotheses[i].p = pTemp[i]/lTot;
+        for (int j = 0; j<hypotheses.hypotheses[i].path.size()-1;j++) {
+            plotTube(globalTube.tube[hypotheses.hypotheses[i].path[j]].main,20,2,j+i*100,0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p,"dyamicMap",dynamicMap);
+        }
+    }
+
+
+    
+}
+
+void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy) {
+
+    dynamicMap.markers.clear();
+    bool consider = considerHuman(human,robot);
+    if (consider) {
+        vector<bool> seenTubes;
+        for (int i=0;i<G.AShort.size();i++) {
+            seenTubes.push_back(false);
+        }
+
+        vector<recursiveWalkStore> store;
+        vector<bool> openTubes;
+        human_walking_detection::hypothesis hypothesisTemp;
+
+
+        createDynamicAsOI(globalTube,robot.x,robot.y,G,seenTubes,openTubes,robot.dMax,store);
+        openTubes.clear();
+        store.clear();
+        createDynamicAsOI(globalTube,x,y,G,openTubes,seenTubes,human.dMax,store);
+        hypotheses.hypotheses.clear();
+        for (int i = 0; i< store.size();i++) {
+            hypothesisTemp.path = store[i].path;
+            hypothesisTemp.pStore = store[i].pStore;
+            hypothesisTemp.index = store[i].index;
+            hypothesisTemp.dTot = store[i].dTot;
+            hypotheses.hypotheses.push_back(hypothesisTemp);
+        }
+        validateHypotheses(x, y, vx, vy);
+    }
+}
+
 void vectorFieldMap::initializeMap() {
     cout<<"initialize map..."<< endl;
-    human_walking_detection::human human;
-    human_walking_detection::robot robot;
     TBCS TBC;
     human_walking_detection::lines lines;
     human_walking_detection::line lineTemp;
@@ -1259,37 +1325,13 @@ void vectorFieldMap::initializeMap() {
 
 
     for (int i=0;i<globalTube.tube.size();i++) {
-        // plotTube(globalTube.tube[i].main,20,2,5*i,0,0,1.0,1.0,1.0,staticMap);
+        plotTube(globalTube.tube[i].main,20,2,5*i,0,0,1.0,1.0,1.0,0.8,"staticMap",staticMap);
     }
-    graph G;
     createGraph(globalTube, G);
     createGraphShort(globalTube, G);
 
-    bool consider = considerHuman(human,robot);
-    if (consider) {
-        vector<bool> seenTubes;
-        for (int i=0;i<G.AShort.size();i++) {
-            seenTubes.push_back(false);
-        }
-
-        vector<recursiveWalkStore> store;
-        vector<bool> openTubes;
-
-
-        createDynamicAsOI(globalTube,robot.x,robot.y,G,seenTubes,openTubes,robot.dMax,store);
-
-        openTubes.clear();
-        store.clear();
-        createDynamicAsOI(globalTube,human.x,human.y,G,openTubes,seenTubes,human.dMax,store);
-        for (int i = 0; i< store.size();i++) {
-            for (int j = 0; j<store[i].path.size()-1;j++) {
-                plotTube(globalTube.tube[store[i].path[j]].main,20,2,5*j+i,0,0,0.0,0.0,1.0,staticMap);
-                cout<<store[i].path[j]<<", ";
-            }
-            cout<<endl;
-        }
-        cout<<endl;
-        cout<<staticMap.markers.size()<<endl;
+    // cout<<endl;
+        // cout<<staticMap.markers.size()<<endl;
 
         // [store,~] = createDynamicAsOI(globalTube,human,G,[],seenTubes,person.dMax);
 
@@ -1305,6 +1347,5 @@ void vectorFieldMap::initializeMap() {
 
 
         // plotAll(1:length(tubesH),1:3,tube,tubesH,store,person,robot)
-    }
 
 }

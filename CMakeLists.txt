@@ -29,6 +29,8 @@ add_message_files(
     lines.msg
     human.msg
     robot.msg
+    hypothesis.msg
+    hypotheses.msg
 )
 
 generate_messages(

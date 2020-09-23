@@ -1,9 +1,5 @@
 #include <functions.h>
 
-
-
-
-
 void getLikelihood(double u, double v, double v_x, double v_y, double d_side1, double d_side2, double &likelihood) {
     double t = 1.0; // time to constraint remaining inside tube
     double sideMargin = 0.3; // higher is more conservative on lateral speed constraints (has to follow tube more)

@@ -12,6 +12,8 @@
 #include <functions.h>
 #include <rosnode.h>
 #include <functionsDiscretizedMap.h>
+#include <human_walking_detection/hypothesis.h>
+#include <human_walking_detection/hypotheses.h>
 
 using namespace std;
 
@@ -25,9 +27,12 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "HWD");
     rosNode rosNode;
     vectorFieldMap map;
-    visualization_msgs::MarkerArray mapMarkers;
+    visualization_msgs::MarkerArray staticMarkers;
+    visualization_msgs::MarkerArray dynamicMarkers;
     rosNode.initialize();
     map.initializeMap();
+    map.readMap(staticMarkers,dynamicMarkers);
+    rosNode.setStaticMap(staticMarkers);
 
     /// [loop start]
     int i=0;
@@ -51,13 +56,22 @@ int main(int argc, char** argv)
 
 
         // if (i%500==0) {
-            rosNode.publishTube(map.globalTube);
-            map.readMap(mapMarkers);
-            rosNode.setMap(mapMarkers);
-            rosNode.publishMap();
+
+        
+        rosNode.publishTube(map.globalTube);
+        map.updateHypotheses(rosNode.humanPosVel.x,rosNode.humanPosVel.y,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy);
+        rosNode.publishHypotheses(map.hypotheses);
+        map.readMap(staticMarkers,dynamicMarkers);
+        // rosNode.removeDynamicMap();
+        if (i%3==0) {
+            rosNode.removeDynamicMap();
+        }
+        rosNode.setDynamicMap(dynamicMarkers);
+        rosNode.publishMap();
         // }
         rosNode.visualizeHuman();
         rosNode.visualizeMeasuredHuman();
+        rosNode.visualizeRobot();
         // cout<<mapMarkers.markers[0].points[0].x<<" "<<mapMarkers.markers[0].points[0].x<<endl;
         
 
