@@ -16,7 +16,7 @@ float64 dr2
 float64[] C1
 float64[] C2
 float64[] C
-int32 signlr
+float64 signlr
 bool empty
 bool marked
 float64 plotZ

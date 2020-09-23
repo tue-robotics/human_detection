@@ -299,9 +299,9 @@ if (tube.curved) {
     double F1 = pow(xT,3.0) * tube.C2[0] +  pow(xT,2.0) * tube.C2[1] + xT * tube.C2[2];
     z = (-yT+F0*tube.C[0]+F1*tube.C[1])/(F0*tube.C[2]+F1*tube.C[3]+1.0);
 
-    if (tube.dx>0 && (xT<0 || xT>tube.dx) ) {
+    if (tube.dx>0.0 && (xT<0.0 || xT>tube.dx) ) {
         inside = false;
-    } else if (tube.dx<0 && (xT>0 || xT<tube.dx) ) {
+    } else if (tube.dx<0.0 && (xT>0.0 || xT<tube.dx) ) {
         inside = false;
     }
     p = xT;
@@ -328,6 +328,7 @@ human_walking_detection::line vectorFieldMap::createLineTemp(double x1,double x2
 }
 
 void vectorFieldMap::linspace(double v1, double v2, int n, vector<double> &result) {
+    result.clear();
     n = n-1;
     double multiplier = 0.0;
     for (double i=0;i<n+1;i++) {
@@ -367,7 +368,7 @@ void vectorFieldMap::clearTube(visualization_msgs::MarkerArray map) {
     map.markers.clear();
 }
 
-void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, int n2,int subID, bool rel, bool sub, visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, visualization_msgs::MarkerArray &map) {
     vector<double> var;
     if (tube.curved) {
         linspace(0.0,tube.theta_tot,n1,var);
@@ -376,7 +377,7 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
     }
     vector<double> plotVar;
     if (rel) {
-        linspace(0,1,n2,plotVar);
+        linspace(0.0,1.0,n2,plotVar);
     } else if (sub) {
         if (tube.plotZ!=101.0) {
             plotVar.push_back(tube.plotZ);
@@ -397,9 +398,9 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
     // marker.type = visualization_msgs::Marker::POINTS;
     marker.type = visualization_msgs::Marker::LINE_STRIP;
     marker.color.a = 1.0;
-    marker.color.r = 1.0;
-    marker.color.g = 1.0;
-    marker.color.b = 1.0;
+    marker.color.r = r;
+    marker.color.g = g;
+    marker.color.b = b;
     marker.scale.x = 0.1;
     // marker.scale.y = 0.2;
     // marker.scale.z = 0.1;
@@ -506,6 +507,461 @@ void vectorFieldMap::readMap(visualization_msgs::MarkerArray &markers) {
     markers = staticMap;
 }
 
+void vectorFieldMap::FuvCurved(double dphidr,double dphidtheta,double theta,double r,double signlr,double &u, double &v) {
+    u = signlr* (cos(theta)*-dphidtheta - r*sin(theta)*dphidr);
+    v = signlr* (sin(theta)*-dphidtheta + r*cos(theta)*dphidr);
+    double l = sqrt(pow(u,2.0)+pow(v,2.0));
+    // norm([u,v]);
+    u=u/l;
+    v=v/l;
+}
+
+void vectorFieldMap::FuvStraight(double dphidx,double dphidy,human_walking_detection::singleTube tube,double &u, double &v) {
+    double uT = -dphidy;
+    double vT = dphidx;
+    u = cos(tube.transform.theta)*uT - sin(tube.transform.theta)*vT;
+    v = sin(tube.transform.theta)*uT + cos(tube.transform.theta)*vT;
+    double l = sqrt(pow(u,2.0)+pow(v,2.0));
+    u=u/l;
+    v=v/l;
+}
+
+void vectorFieldMap::derivativeF(human_walking_detection::singleTube tube, double x, double y, double &dphidx, double &dphidy) {
+double c_1,c_2,c_3,c_4,c_11,c_12,c_13,c_21,c_22,c_23;
+c_1 = tube.C[0];
+c_2 = tube.C[1];
+c_3 = tube.C[2];
+c_4 = tube.C[3];
+c_11 = tube.C1[0];
+c_12 = tube.C1[1];
+c_13 = tube.C1[2];
+c_21 = tube.C2[0];
+c_22 = tube.C2[1];
+c_23 = tube.C2[2];
+dphidx = ((3.0 *c_21 *pow(x,2.0) + 2.0 *c_22 *x + c_23) *(c_4 *y + c_2) + c_3 *(c_12 *x *(c_2 *(c_21 *pow(x,3.0) - c_23 *x) + 2.0 *y) - c_11 *pow(x,2.0) *(c_2 *x *(c_22 *x + 2.0 *c_23) - 3.0 *y) + c_13 *(c_2 *pow(x,2.0) *(2.0 *c_21 *x + c_22) + y)) + c_1 *(c_12 *x *(c_4 *(c_23 *x - c_21 *pow(x,3.0)) + 2.0) + c_11 *pow(x,2.0) *(c_4 *x *(c_22 *x + 2.0 *c_23) + 3.0) - c_13 *(c_4 *pow(x,2.0) *(2.0 *c_21 *x + c_22) - 1.0)))/pow(c_3 *x *(c_11 *pow(x,2.0) + c_12 *x + c_13) + c_4 *x *(c_21 *pow(x,2.0) + c_22 *x + c_23) + 1.0,2.0); // checken
+dphidy = -1.0/(c_3 *x *(c_11 *pow(x,2.0) + c_12 *x + c_13) + c_4 *x *(c_21 *pow(x,2.0) + c_22 *x + c_23) + 1.0);
+}
+
+void vectorFieldMap::calcGradient(human_walking_detection::singleTube tube,double x, double y, double &u, double &v) {
+    double z,p,dphidtheta,dphidr,dphidx,dphidy;
+    bool inside;
+    zVal(tube,x,y,false,z,p,inside);
+    if (tube.curved) {
+        derivativeF(tube,tube.THETA,tube.r,dphidtheta,dphidr);
+        FuvCurved(dphidr,dphidtheta,tube.theta,tube.r,tube.signlr,u,v);
+    } else {
+        // xT = [cos(-tube.transform.theta) -sin(-tube.transform.theta)]*([x;y]-[tube.transform.x;tube.transform.y]);
+        double xT = cos(-tube.transform.theta)*(x-tube.transform.x) - sin(-tube.transform.theta)*(y-tube.transform.y); // Checken
+
+        // yT = [sin(-tube.transform.theta) cos(-tube.transform.theta)]*([x;y]-[tube.transform.x;tube.transform.y]);
+        double yT = sin(-tube.transform.theta)*(x-tube.transform.x) + cos(-tube.transform.theta)*(y-tube.transform.y); // Checken
+
+        derivativeF(tube,xT,yT,dphidx,dphidy);
+        FuvStraight(dphidx,dphidy,tube,u,v);
+        if (tube.dx<0.0) {
+            u = -u;
+            v = -v;
+        }
+    }
+    if (tube.dir == -1.0) {
+        u = -u;
+        v = -v;
+    }
+}
+
+void vectorFieldMap::findPointInTube(human_walking_detection::tubes tubes, double x, double y, vector<int> &index) {
+double z,p;
+bool inside;
+index.clear();
+for (int ind = 0;ind<tubes.tube.size();ind++) {
+    zVal(tubes.tube[ind].main,x,y,false,z,p,inside);
+    if (inside) {
+        index.push_back(ind);
+    }
+}
+}
+
+void vectorFieldMap::createGraph(human_walking_detection::tubes tube, graph &G) {
+    double step = 1.0/1000.0;
+    vector<vector<double>> A;
+    vector<double> row;
+    vector<bool> AMarked;
+    for (int i=0;i<tube.tube.size();i++) {
+        row.push_back(0.0);
+        AMarked.push_back(false);
+    }
+
+    for (int i=0;i<tube.tube.size();i++) {
+        A.push_back(row);
+    }
+    vectorFieldMap::positionVars O;
+    double u,v,z,s,p;
+    vector<int> index;
+    vector<double> pVars,sVars;
+    pVars.push_back(0.0);
+    pVars.push_back(0.0);
+    sVars.push_back(step);
+    sVars.push_back(-step);
+    bool valid,inside;
+    for (int i = 0;i<tube.tube.size();i++) {
+        pVars[1] = tube.tube[i].main.pTot;
+        // for (double p = 0.0;p<1.1*tube.tube[i].main.pTot;p = p + tube.tube[i].main.pTot) {
+        for (int pInd = 0;pInd<2;pInd++) {
+            p = pVars[pInd];
+            // cout<<"p test: "<< p << endl;
+            O = Fry(tube.tube[i].main,p,(tube.tube[i].main.min+tube.tube[i].main.max)/2.0,false);
+            calcGradient(tube.tube[i].main,O.x,O.y,u,v);
+            // for (double s=step;s>0.0;s=-step) {
+            for (int sInd = 0;sInd<2;sInd++) {
+                s = sVars[sInd];
+                findPointInTube(tube,O.x+u*s,O.y+v*s,index);
+                valid = true;
+                for (int j = 0;j<index.size();j++) {
+                    zVal(tube.tube[index[j]].main,O.x+u*s,O.y+v*s,0,z,p,inside);
+                    if ((fabs(p-tube.tube[index[j]].main.pTot)>0.05) && (fabs(p)>0.05)) {
+                        index[j] = 0;
+                    }
+                    if (index[j]==i) {
+                        valid = false;
+                    }
+                }
+                if (valid) {
+                    for (int j = 0;j<index.size();j++) {
+                        if (index[j]!=0) {
+                            if (s>0.0) {
+                                A[index[j]][i] = 1.0;
+                            } else {
+                                A[index[j]][i] = -1.0;                        
+                            }
+                        }
+                    }
+                }
+            }
+        }   
+    }
+
+    for (int i=0; i<A.size();i++) {
+        A[i][i] = 0.0;
+        if (tube.tube[i].main.marked) {
+            AMarked[i] = true;
+        }
+    }
+    G.A = A;
+    G.marked = AMarked;
+}
+
+void vectorFieldMap::createGraphShort(human_walking_detection::tubes tube, graph &G) {
+vector<bool> visited;
+struct positionVars O;
+for (int i=0;i<G.A.size();i++) {
+    visited.push_back(false);
+}
+vector<int> coupledTemp,ALink;
+vector<vector<int>> coupled;
+vector<int> index;
+// coupledTemp = [];
+// coupled = [];
+int shorten = 0;
+for (int i = 0;i<G.A.size();i++) {
+    if (!visited[i]) {
+        O = Fry(tube.tube[i].main,tube.tube[i].main.pTot/2.0,(tube.tube[i].main.max+tube.tube[i].main.min)/2.0,false);
+        findPointInTube(tube,O.x,O.y,index);
+        for (int j = 0; j<index.size(); j++) {
+            if ((i!=index[j]) && !visited[index[j]]) {
+                shorten = shorten + 1;
+                visited[index[j]]=true;
+                coupledTemp.push_back(index[j]);
+            }
+        }
+        if (coupledTemp.size()>0) {
+            coupledTemp.push_back(i);
+            coupled.push_back(coupledTemp);
+            visited[i]=true;
+        }
+        coupledTemp.clear();
+    }
+}
+
+// ALink = zeros(length(visited),1);
+for (int i=0;i<visited.size();i++) {
+    ALink.push_back(0);
+}
+
+
+int indMat = 0;
+for (int i = 0; i<visited.size(); i++) {
+    if (visited[i]) {
+        for (int j = 0; j< coupled.size();j++) {
+            coupledTemp = coupled[j];
+            if (i==coupledTemp.back()) {
+                ALink[i] = indMat;
+            }
+            for (int k = 0; k<coupledTemp.size()-1;k++) {
+                if (i==coupledTemp[k]) {
+                    ALink[i] = ALink[coupledTemp.back()];
+                    indMat = indMat - 1;
+                }
+            }
+        }
+    }
+    if (ALink[i]==0) {
+        ALink[i] = indMat;
+    }
+    indMat = indMat + 1;
+}
+
+int lenA = G.A.size();
+// AShort = zeros(lenA-shorten,lenA-shorten);
+vector<vector<double>> AShort;
+vector<double> row;
+for (int i=0;i<lenA-shorten;i++) {
+    row.push_back(0.0);
+}
+for (int i=0;i<lenA-shorten;i++) {
+    AShort.push_back(row);
+}
+
+for (int i = 0;i<lenA;i++) {
+    for (int j = 0; j<lenA; j++) {
+        double val = fabs(AShort[ALink[i]][ALink[j]]) + fabs(G.A[i][j]);
+        if (val>0.0) {
+            AShort[ALink[i]][ALink[j]] = 1.0;
+        } else {
+            AShort[ALink[i]][ALink[j]] = 0.0;            
+        }
+    }
+}
+
+for (int i = 0;i<AShort.size();i++) {
+    G.AShort.push_back(AShort[i]);
+}
+
+for (int i = 0;i<ALink.size();i++) {
+    G.ALink.push_back(ALink[i]);
+}
+
+// G.AShort = AShort;
+
+// G.ALink = ALink;
+}
+
+bool vectorFieldMap::considerHuman(human_walking_detection::human person,human_walking_detection::robot robot) {
+    double dRP = dist(person.x,person.y,robot.x,robot.y);
+    bool consider = true;
+    if (dRP>5.0) {
+        consider = false;
+    }
+    return consider;
+}
+
+void vectorFieldMap::nextTube(int index,graph G,vector<int> &toTube, vector<double> &direction) {
+    toTube.clear();
+    direction.clear();
+    for (int i = 0; i<G.A.size();i++) {
+        if (G.A[i][index]!=0) {
+            toTube.push_back(i);
+            direction.push_back(G.A[i][index]);
+        }
+    }
+}
+
+bool vectorFieldMap::inAvailableTube(vector<bool> openTubes,graph G,int toTube) {
+    bool considered = false;
+    if (openTubes[G.ALink[toTube]]) {
+        considered = true;
+    } 
+    return considered;
+}
+
+void vectorFieldMap::distEnd(double x,double y,vector<recursiveWalkStore> &store,vector<recursiveWalk> prev,vector<recursiveWalk> &next,human_walking_detection::tubes tube,graph G,vector<bool> openTubes,double dMax) {
+    // next = [];
+    vector<int> index;
+    next.clear();
+
+
+    vector<int> to;
+    vector<double> d_old;
+    vector<double> pStartStore;
+    vector<double> zStartStore;
+    vector<int> storeElementTemp;
+    vector<vector<int>> storeElement;
+
+    for (int i = 0; i<prev.size();i++) {
+        to.push_back(prev[i].toTube);
+        d_old.push_back(prev[i].distance);
+        pStartStore.push_back(prev[i].pEndStore);
+        zStartStore.push_back(prev[i].zEndStore);
+        storeElementTemp = prev[i].storeElement;
+        storeElement.push_back(storeElementTemp);
+    }
+
+    if (to.size()>0) {
+        index = to;
+    } else if (x!=-1.0 && y!=-1.0) {
+        findPointInTube(tube,x,y,index);
+        for (int i = 0; i<index.size();i++) {
+            storeElementTemp.push_back(index[i]);
+            storeElement.push_back(storeElementTemp);
+            storeElementTemp.clear();
+            d_old.push_back(0.0);
+        }
+    }
+    storeElementTemp.clear();
+    vector<int> toTubeTemp;
+    vector<double> dirTemp,pVar;
+    bool inside;
+    double z, p, pTot,d;
+    struct positionVars O,O_new;
+    struct recursiveWalkStore storeTemp;
+    struct recursiveWalk nextTemp;
+    bool checked;
+    // vector<struct recursiveWalkStore> store;
+    for (int i = 0; i<index.size();i++) {
+        nextTube(index[i],G,toTubeTemp,dirTemp);
+        for (int j = 0; j<toTubeTemp.size();j++) {
+            if (to.size()>0) {
+                z = zStartStore[i];
+                p = pStartStore[i];
+            } else {
+                zVal(tube.tube[index[i]].main,x,y,0,z,p,inside);
+            }
+            if (dirTemp[j]==1.0) {
+                pTot = tube.tube[index[i]].main.pTot;
+            } else {
+                pTot = 0.0;
+            }
+            
+            linspace(p,pTot,10,pVar);
+
+
+
+            O = Fry(tube.tube[index[i]].main,pVar[0],z,0);
+            d = 0.0;
+            for (int k = 1; k<pVar.size();k++) {
+                O_new = Fry(tube.tube[index[i]].main,pVar[k],z,0);
+                d = d + dist(O.x,O.y,O_new.x,O_new.y);
+                O = O_new;
+            }
+
+            if (tube.tube[toTubeTemp[j]].main.marked) {
+                storeTemp.index = toTubeTemp[j];
+                storeTemp.dTot = d+d_old[i];
+                zVal(tube.tube[toTubeTemp[j]].main,O.x,O.y,0,z,p,inside);
+                storeTemp.pStore = p;
+                storeElementTemp = storeElement[i];
+                storeElementTemp.push_back(toTubeTemp[j]);
+                storeTemp.path = storeElementTemp;
+                storeElementTemp.clear();
+                store.push_back(storeTemp);
+            } else if ((d>0.01) && ((d + d_old[i])<dMax)) {
+                checked = false;
+                if (openTubes.size()==0) {
+                    checked = true;
+                } else if (inAvailableTube(openTubes,G,toTubeTemp[j])) {
+                    checked = true;
+                } else {
+                    storeTemp.index = toTubeTemp[j];
+                    storeTemp.dTot = d+d_old[i];
+                    zVal(tube.tube[toTubeTemp[j]].main,O.x,O.y,0,z,p,inside);
+                    storeTemp.pStore = p;
+                    storeElementTemp = storeElement[i];
+                    storeElementTemp.push_back(toTubeTemp[j]);
+                    storeTemp.path = storeElementTemp;
+                    storeElementTemp.clear();
+                    // storeTemp.path = [storeElement{i} toTubeTemp(j)];
+                    store.push_back(storeTemp);
+                }
+                if (checked) {
+                    nextTemp.distance = d+d_old[i];
+                    nextTemp.dir = dirTemp[j];
+                    nextTemp.toTube = toTubeTemp[j];
+                    nextTemp.fromTube = index[i];
+                    zVal(tube.tube[toTubeTemp[j]].main,O.x,O.y,0,z,p,inside);
+                    nextTemp.pEndStore = p;
+                    nextTemp.zEndStore = z;
+                    storeElementTemp = storeElement[i];
+                    storeElementTemp.push_back(toTubeTemp[j]);
+                    nextTemp.storeElement = storeElementTemp;
+                    storeElementTemp.clear();
+                    next.push_back(nextTemp);
+                }
+            } else if (d>0.01) {
+                storeTemp.index = toTubeTemp[j];
+                storeTemp.dTot = d+d_old[i];
+                zVal(tube.tube[toTubeTemp[j]].main,O.x,O.y,0,z,p,inside);
+                storeTemp.pStore = p;
+                storeElementTemp = storeElement[i];
+                storeElementTemp.push_back(toTubeTemp[j]);
+                storeTemp.path = storeElementTemp;
+                storeElementTemp.clear();
+                // storeTemp.path = [storeElement{i} toTubeTemp(j)];
+                store.push_back(storeTemp);
+            }
+        }
+    }
+}
+
+void vectorFieldMap::recursiveWalkA(vector<recursiveWalkStore> &store,vector<recursiveWalk> next,human_walking_detection::tubes tube,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax) {
+    if (seenTubes.size()>0) {
+        for (int i = 0; i<next.size();i++) {
+            seenTubes[G.ALink[next[i].toTube]] = true;
+        }
+    }
+
+
+    distEnd(-1.0,-1.0,store,next,next,tube,G,openTubes,dMax);
+    if (next.size()>0) {
+        recursiveWalkA(store,next,tube,G,seenTubes,openTubes,dMax);
+    }
+}
+
+void vectorFieldMap::createDynamicAsOI(human_walking_detection::tubes tube,double xPR, double yPR,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax,vector<recursiveWalkStore> &store) {
+vector<struct recursiveWalk> next,prev;
+distEnd(xPR,yPR,store,prev,next,tube,G,openTubes,dMax);
+if (seenTubes.size()>0) {
+    for (int i = 0; i<next.size();i++) {
+        seenTubes[G.ALink[next[i].fromTube]] = true;
+    }
+}
+
+recursiveWalkA(store,next,tube,G,seenTubes,openTubes,dMax);
+bool finished = false;
+bool same;
+int i = 0;
+double l1, l2;
+
+
+while (!finished && seenTubes.size()==0) {
+    for (int j = 0; j<store.size();j++) {
+        if (j>store.size()) {
+            break;
+        } else {
+            if (G.ALink[store[i].index]==G.ALink[store[j].index] && i!=j) {
+                l1 = store[i].path.size()-2; // CHECKEN -1 of -2
+                l2 = store[j].path.size()-2;
+                // length(store(j).path(1:end-1));
+                if (l1==l2) {
+                    same = true;
+                    for (int z = 0; i<l1;i++) { 
+                        if (store[i].path[z]!=store[j].path[z]) {
+                            same = false;
+                        }
+                    }
+                    if (same) {
+                        store.erase(store.begin() + j); // CHECKEN
+                    }
+                }
+            }
+        }
+    }
+    i = i+1;
+    if (i>store.size()) {
+        finished = true;
+    }
+}
+
+}
+
 void vectorFieldMap::initializeMap() {
     cout<<"initialize map..."<< endl;
     human_walking_detection::human human;
@@ -522,7 +978,7 @@ void vectorFieldMap::initializeMap() {
     robot.df = 1.0;
     robot.db = 1.5;
     robot.dsMax = 1.0;
-    robot.dMax = 2.5;
+    robot.dMax = 3.0;
 
     human.x = 6.5;
     human.y = 8.2;
@@ -531,31 +987,6 @@ void vectorFieldMap::initializeMap() {
 
     TBC.i = -1;
     
-    // lineTemp = createLineTemp(0.0,0.0,0.0,2.5);
-    // lineTemp.dtheta.push_back(0.0);
-    // lineTemp.dtheta.push_back(0.0);
-    // lines.line.push_back(lineTemp);
-
-    // lineTemp = createLineTemp(0.0,2.2,0.0,0.0);
-    // lineTemp.dtheta.push_back(0.0);
-    // lineTemp.dtheta.push_back(0.0);
-    // lines.line.push_back(lineTemp);
-
-    // linesToTube(lines,globalTube,0,TBC,1);
-    // lines.line.push_back(lineTemp);
-    
-    // lineTemp = createLineTemp(0.0,2.5,-0.5,-0.5);
-    // lineTemp.dtheta.push_back(0.0);
-    // lineTemp.dtheta.push_back(0.0);
-    // lines.line.push_back(lineTemp);
-    // linesToTube(lines,globalTube,0,TBC,1);
-
-
-
-
-
-    // plotTube(globalTube.tube[0].main,20,2,0,0,0,staticMap);
-    // plotTube(globalTube.tube[1].main,20,2,10,0,0,staticMap);
     lineTemp = createLineTemp(-5.9,-5.9,0,2.5,0.0,0.0);
     lines.line.push_back(lineTemp);
 
@@ -828,8 +1259,52 @@ void vectorFieldMap::initializeMap() {
 
 
     for (int i=0;i<globalTube.tube.size();i++) {
-        plotTube(globalTube.tube[i].main,20,2,5*i,0,0,staticMap);
+        // plotTube(globalTube.tube[i].main,20,2,5*i,0,0,1.0,1.0,1.0,staticMap);
     }
+    graph G;
+    createGraph(globalTube, G);
+    createGraphShort(globalTube, G);
 
+    bool consider = considerHuman(human,robot);
+    if (consider) {
+        vector<bool> seenTubes;
+        for (int i=0;i<G.AShort.size();i++) {
+            seenTubes.push_back(false);
+        }
+
+        vector<recursiveWalkStore> store;
+        vector<bool> openTubes;
+
+
+        createDynamicAsOI(globalTube,robot.x,robot.y,G,seenTubes,openTubes,robot.dMax,store);
+
+        openTubes.clear();
+        store.clear();
+        createDynamicAsOI(globalTube,human.x,human.y,G,openTubes,seenTubes,human.dMax,store);
+        for (int i = 0; i< store.size();i++) {
+            for (int j = 0; j<store[i].path.size()-1;j++) {
+                plotTube(globalTube.tube[store[i].path[j]].main,20,2,5*j+i,0,0,0.0,0.0,1.0,staticMap);
+                cout<<store[i].path[j]<<", ";
+            }
+            cout<<endl;
+        }
+        cout<<endl;
+        cout<<staticMap.markers.size()<<endl;
+
+        // [store,~] = createDynamicAsOI(globalTube,human,G,[],seenTubes,person.dMax);
+
+        // for (int i = 0; i<store.size();i++) { 
+        //     for (int j = 0;j<10;j++) {
+        //         z = tube{store(i).index}.min+j*(tube{store(i).index}.max-tube{store(i).index}.min)/10.0;
+        //         O = Fry(tube{store(i).index},store(i).pStore,z,0);
+        //         plot(O.x,O.y,'.g');
+        //     }
+        // }
+
+        // tubesH = createTubeHypothesis(tube,store,G,robot);
+
+
+        // plotAll(1:length(tubesH),1:3,tube,tubesH,store,person,robot)
+    }
 
 }

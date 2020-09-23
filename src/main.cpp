@@ -54,7 +54,6 @@ int main(int argc, char** argv)
             rosNode.publishTube(map.globalTube);
             map.readMap(mapMarkers);
             rosNode.setMap(mapMarkers);
-            cout<<"size: "<<mapMarkers.markers.size()<<endl;
             rosNode.publishMap();
         // }
         rosNode.visualizeHuman();
@@ -119,4 +118,3 @@ int main(int argc, char** argv)
 
     return 0;
 }
-

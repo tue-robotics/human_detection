@@ -140,14 +140,16 @@ void rosNode::publishHumanPV() {
 
 void rosNode::visualizeHuman() {
     markerA.ns = "humanState";
-    createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,markerA);
+    // createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,markerA);
+    createLine(1,6.5,8.2,0.0,6.5,8.2,1.8,0.0,0.0,1.0,0.3,markerA);
     humanState.publish (deleteAllMarker);
     humanState.publish (markerA);
 }
 
 void rosNode::visualizeMeasuredHuman() {
     markerA.ns = "measuredHuman";
-    createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
+    // createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
+    createLine(1,4.5,8.4,0.0,4.5,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
     measuredHuman.publish (deleteAllMarker);
     measuredHuman.publish (markerA);
 }
