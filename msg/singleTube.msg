@@ -31,3 +31,7 @@ float64[] x2
 float64[] y1
 float64[] y2
 float64[] dy
+float64[] dTube
+float64[] dTubeCum
+float64 pM
+float64 pC

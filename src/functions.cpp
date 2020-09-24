@@ -8,7 +8,7 @@ void getLikelihood(double u, double v, double v_x, double v_y, double d_side1, d
 
     double v_T =  v_x*u + v_y*v;
     double v_L =  -v_x*v + v_y*u;
-    cout<<">>>>>>>>>speed tube"<< v_T<<"speed lateral"<<v_L<<endl;
+    // cout<<">>>>>>>>>speed tube"<< v_T<<"speed lateral"<<v_L<<endl;
     likelihood = v_T/(v_T+fabs(v_L));
     // Minimal progression constraint
     if (v_T < v_min+speedMargin) {

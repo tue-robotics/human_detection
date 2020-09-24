@@ -97,21 +97,21 @@ int main(int argc, char** argv)
         } else {
             if (rosNode.humanPosVel.vx>0) {
                 curvedVectorField1(rosNode.humanPosVel.x, rosNode.humanPosVel.y, u,v,dist1,dist2);
-                cout<<"Up from left!"<<endl;
+                // cout<<"Up from left!"<<endl;
                 getLikelihood(u,v,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,dist1,dist2,likelihood);
             } else {
                 curvedVectorField2(rosNode.humanPosVel.x, rosNode.humanPosVel.y, u,v,dist1,dist2);
-                cout<<"Up from right!"<<endl;
+                // cout<<"Up from right!"<<endl;
                 getLikelihood(u,v,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,dist1,dist2,likelihood);
             }
         }
-        cout<< "likelihood up is equal to: " << likelihood<<endl;
+        // cout<< "likelihood up is equal to: " << likelihood<<endl;
         rosNode.p2 = likelihood;
         getLikelihood(1,0,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,-rosNode.humanPosVel.y,2.5-rosNode.humanPosVel.y,likelihood);
-        cout<< "likelihood right is equal to: " << likelihood<<endl;
+        // cout<< "likelihood right is equal to: " << likelihood<<endl;
         rosNode.p3 = likelihood;
         getLikelihood(-1,0,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy,rosNode.humanPosVel.y-2.5,rosNode.humanPosVel.y,likelihood);
-        cout<< "likelihood left is equal to: " << likelihood<<endl;
+        // cout<< "likelihood left is equal to: " << likelihood<<endl;
         rosNode.p1 = likelihood;
         rosNode.p4 = 0.2;
 

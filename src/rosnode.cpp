@@ -149,7 +149,7 @@ void rosNode::publishAoI() {
     markerArrayAoI.markers[8].color.g = 0.3+p1/0.7;
     markerArrayAoI.markers[4].color.g = 0.3+p2/0.7;
     markerArrayAoI.markers[3].color.g = 0.3+p3/0.7;
-    cout<<p1<<" "<<p2<<" "<<p3<<endl;
+    // cout<<p1<<" "<<p2<<" "<<p3<<endl;
     semantic_map.publish(markerArrayAoI);
 }
 

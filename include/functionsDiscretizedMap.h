@@ -100,5 +100,10 @@ class vectorFieldMap {
     bool inAvailableTube(vector<bool> openTubes,graph G,int toTube);
     void nextTube(int index,graph G,vector<int> &toTube, vector<double> &direction);
     void recursiveWalkA(vector<recursiveWalkStore> &store,vector<recursiveWalk> next,human_walking_detection::tubes tube,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax);
-    void validateHypotheses(double x, double y, double vx, double vy);
+    void validateHypotheses(double x, double y, double vx, double vy, vector<human_walking_detection::tubes> tubesH);
+    void createTubeHypothesis(human_walking_detection::tubes tube,vector<recursiveWalkStore> store,graph G,human_walking_detection::robot robot, vector<human_walking_detection::tubes> &tubesH);
+    void borderTransform(human_walking_detection::tubes &tube);
+    void plotAOI(human_walking_detection::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map);
+    void walkConstant(human_walking_detection::singleTube tube,double ds,double &x,double &y, double &C, double &p, double &D);
+
 };

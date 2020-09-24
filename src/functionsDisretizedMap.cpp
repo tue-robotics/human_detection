@@ -390,8 +390,6 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
         linspace(tube.min,tube.max,n2,plotVar);
     }    
 
-    // plot([tube.lines(1).x(1) tube.lines(1).x(2)],[tube.lines(1).y(1) tube.lines(1).y(2)],'r');
-    // plot([tube.lines(2).x(1) tube.lines(2).x(2)],[tube.lines(2).y(1) tube.lines(2).y(2)],'r');
     visualization_msgs::Marker marker;
     marker.header.frame_id = "/semanticMap";
     marker.action = visualization_msgs::Marker::ADD;
@@ -409,7 +407,6 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
     marker.pose.orientation.w = 1.0;
     geometry_msgs::Point sample;
 
-
     vectorFieldMap::positionVars O;
     for (int i=0;i<plotVar.size();i++) {
         for (int j = 0;j<var.size();j++) {
@@ -423,6 +420,39 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
     map.markers.push_back(marker);
     marker.points.clear();
     }
+} 
+
+void vectorFieldMap::plotAOI(human_walking_detection::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map) {
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "/semanticMap";
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.header.stamp = ros::Time();
+    marker.ns = ns;
+    // marker.type = visualization_msgs::Marker::POINTS;
+    marker.type = visualization_msgs::Marker::LINE_STRIP;
+    marker.color.a = a;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    marker.scale.x = 0.1;
+    // marker.scale.y = 0.2;
+    // marker.scale.z = 0.1;
+    marker.pose.orientation.w = 1.0;
+    geometry_msgs::Point sample;
+
+    vectorFieldMap::positionVars O;
+    double zN;
+    for (int j = 0; j<n+1; j++) {
+        zN = tube.min+double(j)*(tube.max-tube.min)/double(n);
+        O = Fry(tube,p,zN,0);
+        sample.x  = O.x;
+        sample.y = O.y;
+        sample.z = 0.0;
+        marker.points.push_back(sample);
+    }
+    marker.id = subID;
+    map.markers.push_back(marker);
+    marker.points.clear();
 } 
 
 void vectorFieldMap::linesToTube(human_walking_detection::lines &lines,human_walking_detection::tubes &tubes,double id,TBCS TBC,bool marked) {
@@ -978,25 +1008,200 @@ while (!finished && seenTubes.size()==0) {
 
 }
 
-void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy) {
+void vectorFieldMap::borderTransform(human_walking_detection::tubes &tube) {
+double p, u, v;
+vectorFieldMap::positionVars O, OMax, OMin, O1, O2, O_old;
+
+if (tube.tube[0].main.dir==1) {
+	p = 0.0;
+} else {
+	p = tube.tube[0].main.pTot;
+}
+
+O = Fry(tube.tube[0].main,p,(tube.tube[0].main.max+tube.tube[0].main.min)/2.0,0);
+calcGradient(tube.tube[0].main,O.x,O.y,u,v);
+double uT, vT, testVar, Z1, Z2;
+uT = v;
+vT = -u;
+OMax = Fry(tube.tube[0].main,p,tube.tube[0].main.max,0);
+OMin = Fry(tube.tube[0].main,p,tube.tube[0].main.min,0);
+testVar = (OMin.x-OMax.x)*uT + (OMin.y-OMax.y)*vT;
+if (testVar>0) {
+    Z1 = tube.tube[0].main.max;
+    Z2 = tube.tube[0].main.min;
+} else {
+    Z1 = tube.tube[0].main.min;
+    Z2 = tube.tube[0].main.max;
+}
+double transTempC1, transTempC2;
+
+transTempC1 = -Z1;
+transTempC2 = 1.0/(Z2-Z1);
+tube.tube[0].main.cTransC1 = transTempC1;
+tube.tube[0].main.cTransC2 = transTempC2;
+
+bool inside;
+double PUNUSED;
+for (int i = 1; i<tube.tube.size(); i++) {
+    if (tube.tube[i-1].main.dir==1) {
+    	p = tube.tube[i-1].main.pTot;
+    } else {
+    	p = 0.0;
+    }
+    O1 = Fry(tube.tube[i-1].main,p,0.0,1);
+    O2 = Fry(tube.tube[i-1].main,p,1.0,1);
+    
+    zVal(tube.tube[i].main,O1.x,O1.y,0,Z1,PUNUSED,inside);
+    zVal(tube.tube[i].main,O2.x,O2.y,0,Z2,PUNUSED,inside);
+    // Z2 = zVal(tube{i},O2.x,O2.y,0);
+    tube.tube[i].main.cTransC1 = -Z1;
+    tube.tube[i].main.cTransC2 = 1.0/(Z2-Z1);;
+
+}
+    
+
+vector<double> dTubeCum, prog, dTube;
+
+for (int z=0; z<5; z++) {
+    dTubeCum.push_back(0.0);
+}
+// prog = [];
+double P, d;
+
+for (int i=0; i< tube.tube.size(); i++) {
+    if (tube.tube[i].main.curved) {
+        P = tube.tube[i].main.theta_tot;
+    } else {
+        P = tube.tube[i].main.dx;
+    }
+    prog.push_back(P);
+    // dTube = [];
+    for (int z=0; z<5; z++) {
+        O_old = Fry(tube.tube[i].main,P/100.0*0.0,z/4.0,1);
+        d=0.0;
+        for (int j=1; j<101; j++) {
+            O = Fry(tube.tube[i].main,P/100.0*j,z/4.0,1);
+            d = d+ dist(O.x,O.y, O_old.x, O_old.y);
+            // sqrt((O.x-O_old.x)^2+(O.y-O_old.y)^2);
+            O_old = O;
+        }
+        dTube.push_back(d);
+    }
+    tube.tube[i].main.dTube = dTube;
+    for (int z = 0; z<5; z++) {
+        dTubeCum[z] = dTubeCum[z] + dTube[z];
+    }
+    tube.tube[i].main.dTubeCum = dTubeCum;
+}
+double totProg = 0.0;
+for (int i=0; i<prog.size(); i++) {
+    totProg = totProg + fabs(prog[i]);
+}
+
+
+// totProg = sum(abs(prog));
+double pCum_old = 0.0;
+double A11, A12, A21, A22, b1, b2, pCum, idet, pStart, pEnd;
+for (int i = 0; i<tube.tube.size(); i++) {
+    if (tube.tube[i].main.dir==1) {
+        pStart = 0.0;
+        pEnd = tube.tube[i].main.pTot;
+    } else {
+        pStart = tube.tube[i].main.pTot;
+        pEnd = 0.0;
+    }
+    A11 = pStart;
+    A12 = 1.0;
+    A21 = pEnd;
+    A22 = 1.0;
+    pCum = pCum_old + fabs(tube.tube[i].main.pTot)/totProg;
+    b1 = pCum_old;
+    b2 = pCum;
+    pCum_old = pCum;
+    idet = 1.0/(A11*A22-A12*A21);
+    tube.tube[i].main.pM = idet*A22*b1 - idet*A12*b2;
+    tube.tube[i].main.pC = -idet*A21*b1 + idet*A11*b2;
+}
+
+}
+
+void vectorFieldMap::walkConstant(human_walking_detection::singleTube tube,double ds,double &x,double &y, double &C, double &p, double &D) {
+    D = 0.0;
+    double step = 0.001;
+    bool inside;
+    zVal(tube,x,y,true,C,p,inside);
+    vectorFieldMap::positionVars O;
+    if (!inside) {
+        x = -1; //CHECKEN EFFECT []-->-1
+        y = -1;
+    } else {
+        double s = sign(ds);
+        if (ds==0) {
+            O.x = x;
+            O.y = y;
+        } else {
+            O = Fry(tube,p,C,1);
+            D = dist(O.x,O.y,x,y);
+            while (D<fabs(ds) && inside) {
+                O = Fry(tube,p,C,1);
+                D = dist(O.x,O.y,x,y);
+                C = C + s * step;
+                if (C <= 0 || C >= 1) {
+                    inside = false;
+                }
+            }
+        }
+        x = O.x;
+        y = O.y;
+    }
+}
+
+void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy, vector<human_walking_detection::tubes> tubesH) {
     double u, v, likelihood, lTot;
+    bool inside;
     vector<double> pTemp;
     lTot = 0.0;
+    vectorFieldMap::positionVars O, O_old;
+    double xTemp, yTemp, C, Dpos, Dneg, p;
     for (int i = 0; i<hypotheses.hypotheses.size(); i++) {
-        calcGradient(globalTube.tube[hypotheses.hypotheses[i].path[0]].main, x, y, u, v);
-        getLikelihood(u, v, vx, vy, -1.0, 1.0, likelihood);
+        // calcGradient(globalTube.tube[hypotheses.hypotheses[i].path[0]].main, x, y, u, v);
+        xTemp = x;
+        yTemp = y;
+        walkConstant(tubesH[i].tube[0].main,1000.0,xTemp,yTemp,C,p,Dneg);
+        walkConstant(tubesH[i].tube[0].main,-1000.0,xTemp,yTemp,C,p,Dpos);
+        if (i==0) {
+        // cout<<"positive distance: "<<Dpos<<endl;
+        // cout<<"negative distance: "<<Dneg<<endl;
+        }
+
+        calcGradient(tubesH[i].tube[0].main, x, y, u, v); // TODOOOOOO: naar inclusief subTubes
+        getLikelihood(u, v, vx, vy, -Dneg, Dpos, likelihood);
         pTemp.push_back(likelihood);
         lTot = lTot + likelihood;
     }
+    lTot = 1.0;//lTot + 0.5;
+    cout<<"total likelihood: "<<lTot<<endl;
     for (int i = 0; i<pTemp.size(); i++) {
         hypotheses.hypotheses[i].p = pTemp[i]/lTot;
-        for (int j = 0; j<hypotheses.hypotheses[i].path.size()-1;j++) {
-            plotTube(globalTube.tube[hypotheses.hypotheses[i].path[j]].main,20,2,j+i*100,0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p,"dyamicMap",dynamicMap);
-        }
     }
+}
 
-
-    
+void vectorFieldMap::createTubeHypothesis(human_walking_detection::tubes tube,vector<recursiveWalkStore> store,graph G,human_walking_detection::robot robot, vector<human_walking_detection::tubes> &tubesH) {
+// tubesH = [];
+// tubeTemp = [];
+human_walking_detection::tubes tubeTemp;
+for (int i = 0; i<store.size(); i++) {
+    for (int j = 0; j<store[i].path.size()-1; j++) {//:length(store(i).path)-1
+        tubeTemp.tube.push_back(tube.tube[store[i].path[j]]);// = tube{store(i).path(j)};
+        tubeTemp.tube[j].main.dir = G.A[store[i].path[j+1]][store[i].path[j]];
+    }
+    borderTransform(tubeTemp);
+    // tubeTemp = addObject(tubeTemp,robot,0);
+    // tubeTemp = addObject(tubeTemp,robot,1);
+    // tubeTemp = addObject(tubeTemp,robot,2);
+    tubesH.push_back(tubeTemp);
+    tubeTemp.tube.clear();
+}
 }
 
 void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy) {
@@ -1026,7 +1231,23 @@ void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy) 
             hypothesisTemp.dTot = store[i].dTot;
             hypotheses.hypotheses.push_back(hypothesisTemp);
         }
-        validateHypotheses(x, y, vx, vy);
+
+        vector<human_walking_detection::tubes> tubesH;
+
+        createTubeHypothesis(globalTube,store,G,robot,tubesH);
+        validateHypotheses(x, y, vx, vy, tubesH);
+
+        for (int i = 0; i<tubesH.size(); i++) {
+            for (int j = 0; j<tubesH[i].tube.size();j++) {
+                plotTube(tubesH[i].tube[j].main,20,2,j+i*100,0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*0.95+0.05,"dyamicMap",dynamicMap);
+                // plotTube(tubesH[i].tube[j].main,1,50,j+i*100,0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p/0.8+0.2,"AoIMap",dynamicMap);
+            }
+            plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].main,10,i,hypotheses.hypotheses[i].p*0.95+0.05,"AoIMap",hypotheses.hypotheses[i].pStore,dynamicMap);
+        }
+
+// void vectorFieldMap::plotAOI(human_walking_detection::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map) {
+
+        // validateHypotheses(x, y, vx, vy);
     }
 }
 
@@ -1325,7 +1546,7 @@ void vectorFieldMap::initializeMap() {
 
 
     for (int i=0;i<globalTube.tube.size();i++) {
-        plotTube(globalTube.tube[i].main,20,2,5*i,0,0,1.0,1.0,1.0,0.8,"staticMap",staticMap);
+        // plotTube(globalTube.tube[i].main,20,2,5*i,0,0,1.0,1.0,1.0,0.8,"staticMap",staticMap);
     }
     createGraph(globalTube, G);
     createGraphShort(globalTube, G);
