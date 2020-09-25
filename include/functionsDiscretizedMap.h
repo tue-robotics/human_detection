@@ -6,6 +6,7 @@ using namespace std;
 #include <human_walking_detection/tube.h>
 #include <human_walking_detection/singleTube.h>
 #include <human_walking_detection/tubes.h>
+#include <human_walking_detection/tubesH.h>
 #include <human_walking_detection/transform.h>
 #include <human_walking_detection/human.h>
 #include <human_walking_detection/robot.h>
@@ -23,6 +24,7 @@ class vectorFieldMap {
     void updateHypotheses(double x, double y, double vx, double vy);
     void readMap(visualization_msgs::MarkerArray &staticMarkers,visualization_msgs::MarkerArray &dynamicMarkers);
     human_walking_detection::tubes globalTube;
+    human_walking_detection::tubesH globalTubesH;
     human_walking_detection::hypotheses hypotheses;
 
     struct positionVars {
@@ -105,5 +107,20 @@ class vectorFieldMap {
     void borderTransform(human_walking_detection::tubes &tube);
     void plotAOI(human_walking_detection::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map);
     void walkConstant(human_walking_detection::singleTube tube,double ds,double &x,double &y, double &C, double &p, double &D);
+    void addObject(human_walking_detection::tubes &tube,human_walking_detection::robot object, int TBCi);
+    void walkToBorder(double &x,double &y,double dMax,human_walking_detection::tubes tube,bool &endReached, double &dist, bool &border);
+    void minVal(vector<double> prTemp, double &minVal, int &minInd);
+    void maxVal(vector<double> prTemp, double &minVal, int &minInd);
+    int findPGlobalInTube(human_walking_detection::tubes tube, double p);
+    double angleBetweenVectors(human_walking_detection::line lineTemp,double v1[2]);
+    double relativeGradientV2(human_walking_detection::line lineTemp,human_walking_detection::singleTube tube,int i);
+    void addBorderElement(double zFixed,double zBorder,human_walking_detection::tubes tube,double p,double dfStart,human_walking_detection::lines linesB,double index,positionVars O,double theta_2);
+    void splitFrontBack(double &xLoop,double &yLoop,double &df,human_walking_detection::tubes tube,bool &endReached,human_walking_detection::lines &lines,human_walking_detection::lines &linesB,double &dTot,double zVar,vector<double> CfT1,vector<double> CfT2,double zFixed,double zBorder,double dfStart);
+    void newTubeSplit(human_walking_detection::tubes tube,double zFixed,double zBorder,double zVar,double zVarEnd,double pVar,double df,double v1[2],human_walking_detection::lines &lines,human_walking_detection::lines &linesB);
+    void walkStraight(double x1,double y1,double x2,double y2,human_walking_detection::tubes tube,vector<int> tube_indices, vector<double> x_ind, vector<double> y_ind);
+    void newTubeSplitMiddle(human_walking_detection::tubes tube,double zFixed,double x[4],double y[4],int ind1,int ind2,double v1[2],double zBorder,human_walking_detection::lines &lines,human_walking_detection::lines &linesB);
+    void plotLine(double x1, double x2, double y1, double y2, int i,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map);
+
+
 
 };

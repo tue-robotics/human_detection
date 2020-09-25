@@ -12,6 +12,7 @@
 #include <human_walking_detection/tube.h>
 #include <human_walking_detection/singleTube.h>
 #include <human_walking_detection/tubes.h>
+#include <human_walking_detection/tubesH.h>
 #include <human_walking_detection/hypothesis.h>
 #include <human_walking_detection/hypotheses.h>
 
@@ -35,6 +36,7 @@ class rosNode {
         ros::Publisher humanState;
         ros::Publisher humanPV;
         ros::Publisher tubeTop;
+        ros::Publisher tubeHTop;
         ros::Publisher hypothesesTop;
 
         ros::NodeHandle n;
@@ -92,7 +94,7 @@ class rosNode {
 
         void setDynamicMap(visualization_msgs::MarkerArray dynamicMap);
 
-        void publishTube(human_walking_detection::tubes tube);
+        void publishTube(human_walking_detection::tubes tube, human_walking_detection::tubesH);
 
         void publishHypotheses(human_walking_detection::hypotheses hypotheses);
 

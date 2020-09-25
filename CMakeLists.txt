@@ -25,6 +25,7 @@ add_message_files(
     singleTube.msg
     tube.msg
     tubes.msg
+    tubesH.msg
     line.msg
     lines.msg
     human.msg

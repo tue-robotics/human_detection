@@ -58,7 +58,7 @@ int main(int argc, char** argv)
         // if (i%500==0) {
 
         
-        rosNode.publishTube(map.globalTube);
+        rosNode.publishTube(map.globalTube,map.globalTubesH);
         map.updateHypotheses(rosNode.humanPosVel.x,rosNode.humanPosVel.y,rosNode.humanPosVel.vx,rosNode.humanPosVel.vy);
         rosNode.publishHypotheses(map.hypotheses);
         map.readMap(staticMarkers,dynamicMarkers);

@@ -8,6 +8,7 @@ void rosNode::initialize() {
     humanState = n.advertise<visualization_msgs::Marker>("/HWD/humanState",3);
     humanPV = n.advertise<human_walking_detection::PoseVel>("/HWD/trackedHuman",3);
     tubeTop = n.advertise<human_walking_detection::tubes>("/HWD/tubes",3);
+    tubeHTop = n.advertise<human_walking_detection::tubesH>("/HWD/tubesH",3);
     hypothesesTop = n.advertise<human_walking_detection::hypotheses>("/HWD/hypotheses",3);
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
     n.getParam("/human_walking_detection/a",iMax);
@@ -137,8 +138,9 @@ void rosNode::removeDynamicMap() {
     dynamic_map.publish (deleteAllMarkerArray);
 }
 
-void rosNode::publishTube(human_walking_detection::tubes tube) {
+void rosNode::publishTube(human_walking_detection::tubes tube, human_walking_detection::tubesH tubesH) {
     tubeTop.publish(tube);
+    tubeHTop.publish(tubesH);
 }
 
 void rosNode::publishHypotheses(human_walking_detection::hypotheses hypotheses) {
@@ -146,11 +148,11 @@ void rosNode::publishHypotheses(human_walking_detection::hypotheses hypotheses) 
 }
 
 void rosNode::publishAoI() {
-    markerArrayAoI.markers[8].color.g = 0.3+p1/0.7;
-    markerArrayAoI.markers[4].color.g = 0.3+p2/0.7;
-    markerArrayAoI.markers[3].color.g = 0.3+p3/0.7;
-    // cout<<p1<<" "<<p2<<" "<<p3<<endl;
-    semantic_map.publish(markerArrayAoI);
+    // markerArrayAoI.markers[8].color.g = 0.3+p1/0.7;
+    // markerArrayAoI.markers[4].color.g = 0.3+p2/0.7;
+    // markerArrayAoI.markers[3].color.g = 0.3+p3/0.7;
+    // // cout<<p1<<" "<<p2<<" "<<p3<<endl;
+    // semantic_map.publish(markerArrayAoI);
 }
 
 void rosNode::publishHumanPV() {
@@ -176,7 +178,7 @@ void rosNode::visualizeMeasuredHuman() {
 void rosNode::visualizeRobot() {
     markerA.ns = "virtualRobot";
     // createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
-    createLine(1,4.5,8.4,0.0,4.5,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
+    createLine(1,6.0,8.4,0.0,6.0,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
     virtualRobot.publish (deleteAllMarker);
     virtualRobot.publish (markerA);
 }
