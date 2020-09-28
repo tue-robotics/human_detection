@@ -13,8 +13,9 @@ void rosNode::initialize() {
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
     n.getParam("/human_walking_detection/a",iMax);
     n.getParam("/human_walking_detection/real",real);
-    n.getParam("/human_walking_detection/xCamera",xCamera);
-    n.getParam("/human_walking_detection/yCamera",yCamera);
+    n.getParam("/human_walking_detection/xCamera",xRobot);
+    n.getParam("/human_walking_detection/yCamera",yRobot);
+    n.getParam("/human_walking_detection/thetaCamera",thetaRobot);
     if (real) {
         subHuman = n.subscribe("/Jetson/cameraDetections",1000, &rosNode::updateRealMeasurement, this);
     } else {
@@ -34,7 +35,7 @@ void rosNode::initialize() {
     p4 = 0.0;
 }
 
-void rosNode::createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, visualization_msgs::Marker &marker) {
+void rosNode::createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, double a, visualization_msgs::Marker &marker) {
     double dx,dy,dz, dist;
     double t3,t2,t1;
 
@@ -71,7 +72,7 @@ void rosNode::createLine(int i, double xL, double yL, double zL, double xR, doub
     marker.scale.x = radius;
     marker.scale.y = radius;
     marker.scale.z = dist;
-    marker.color.a = 1.0;
+    marker.color.a = a;
     marker.color.r = r;
     marker.color.g = g;
     marker.color.b = b;
@@ -80,12 +81,13 @@ void rosNode::createLine(int i, double xL, double yL, double zL, double xR, doub
 void rosNode::updateFakeMeasurement(const human_walking_detection::Pose& poseHuman) {
     measurement[0] = poseHuman.x;
     measurement[1] = poseHuman.y;
+    // cout<<"position: x = "<<measurement[0]<<", y = "<<measurement[1]<<endl;
 }
 
 void rosNode::updateRealMeasurement(const camera_detector::detections& poseHuman) {
     if (poseHuman.detections.size()>0) {
-        measurement[0] = poseHuman.detections[0].x + xCamera;
-        measurement[1] = poseHuman.detections[0].y + yCamera;
+        measurement[0] = cos(thetaRobot) * (poseHuman.detections[0].x+0.6) - sin(thetaRobot) * poseHuman.detections[0].y + xRobot;
+        measurement[1] = sin(thetaRobot) * (poseHuman.detections[0].x+0.6) + cos(thetaRobot) * poseHuman.detections[0].y + yRobot;
     }
 }
 
@@ -103,17 +105,17 @@ void rosNode::processMap() {
     n.getParam("/human_walking_detection/AoI",AoI);
 // plot walls
     for (int i=0;i<walls.size();i++) {
-        createLine(i,walls[i]["x0"],walls[i]["y0"],walls[i]["z0"],walls[i]["x1"],walls[i]["y1"],walls[i]["z1"],1.0,0.0,0.0,0.05,markerA);
+        createLine(i,walls[i]["x0"],walls[i]["y0"],walls[i]["z0"],walls[i]["x1"],walls[i]["y1"],walls[i]["z1"],1.0,0.0,0.0,0.05,0.7,markerA);
         markerArrayWalls.markers.push_back(markerA);
     }
 // plot Areas of Interest
     markerA.ns = "AoI";
     for (int i=0;i<AoI.size();i++) {
         if (i==3&&i==4&&i==8) {
-            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.0,0.3,0.0,0.05,markerA);
+            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.0,0.3,0.0,0.05,0.4,markerA);
             markerArrayAoI.markers.push_back(markerA);
         } else {
-            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.3,0.0,0.0,0.05,markerA);
+            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.3,0.0,0.0,0.05,0.4,markerA);
             markerArrayAoI.markers.push_back(markerA);
         }
     }
@@ -147,21 +149,13 @@ void rosNode::publishHypotheses(human_walking_detection::hypotheses hypotheses) 
     hypothesesTop.publish(hypotheses);
 }
 
-void rosNode::publishAoI() {
-    // markerArrayAoI.markers[8].color.g = 0.3+p1/0.7;
-    // markerArrayAoI.markers[4].color.g = 0.3+p2/0.7;
-    // markerArrayAoI.markers[3].color.g = 0.3+p3/0.7;
-    // // cout<<p1<<" "<<p2<<" "<<p3<<endl;
-    // semantic_map.publish(markerArrayAoI);
-}
-
 void rosNode::publishHumanPV() {
     humanPV.publish (humanPosVel);
 }
 
 void rosNode::visualizeHuman() {
     markerA.ns = "humanState";
-    createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,markerA);
+    createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,1.0,markerA);
     // createLine(1,6.5,8.2,0.0,6.5,8.2,1.8,0.0,0.0,1.0,0.3,markerA);
     humanState.publish (deleteAllMarker);
     humanState.publish (markerA);
@@ -169,18 +163,18 @@ void rosNode::visualizeHuman() {
 
 void rosNode::visualizeMeasuredHuman() {
     markerA.ns = "measuredHuman";
-    createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
+    createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,1.0,markerA);
     // createLine(1,4.5,8.4,0.0,4.5,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
     measuredHuman.publish (deleteAllMarker);
     measuredHuman.publish (markerA);
 }
 
 void rosNode::visualizeRobot() {
-    markerA.ns = "virtualRobot";
-    // createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
-    createLine(1,6.0,8.4,0.0,6.0,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
-    virtualRobot.publish (deleteAllMarker);
-    virtualRobot.publish (markerA);
+    // markerA.ns = "virtualRobot";
+    // // createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
+    // createLine(1,0.0,1.4,0.0,0.0,1.4,1.8,0.5,0.5,0.5,0.3,1.0,markerA);
+    // virtualRobot.publish (deleteAllMarker);
+    // virtualRobot.publish (markerA);
 }
 
 void rosNode::setStaticMap(visualization_msgs::MarkerArray staticMap) {

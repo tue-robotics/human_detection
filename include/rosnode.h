@@ -59,10 +59,10 @@ class rosNode {
         // rosparam
         int iMax;
         bool real;
-        double xCamera,yCamera;
+        double xRobot,yRobot,thetaRobot;
   
         //functions
-        void createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, visualization_msgs::Marker &marker);
+        void createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, double a, visualization_msgs::Marker &marker);
 
         void processMap();
 
@@ -71,8 +71,6 @@ class rosNode {
         void publishHumanPV();
 
         void visualizeHuman();
-
-        void publishAoI();
 
         void publishTube();
 

@@ -2,7 +2,7 @@
 
 void getLikelihood(double u, double v, double v_x, double v_y, double d_side1, double d_side2, double &likelihood) {
     double t = 1.0; // time to constraint remaining inside tube
-    double sideMargin = 0.3; // higher is more conservative on lateral speed constraints (has to follow tube more)
+    double sideMargin = 0.2; // higher is more conservative on lateral speed constraints (has to follow tube more)
     double v_min = 0.1; // minimal absolute speed to remain "moving" towards goal
     double speedMargin = 0.5; // higher is more conservative on minimal speed constraint
 
@@ -35,43 +35,6 @@ void getLikelihood(double u, double v, double v_x, double v_y, double d_side1, d
         }
     }
 }
-
-void curvedVectorField1(double x, double y, double &u, double &v, double &dist1, double &dist2) {
-    y = y-2.5;
-    x = x-2.5;
-    u = -2.0*y;
-    v = 2.0*x;
-    double tot = sqrt(pow(u,2.0)+pow(v,2.0));
-    u = u/tot;
-    v = v/tot;
-    cout<<"u: "<<u<<", v: "<<v<<endl;
-    double r = sqrt(pow(x,2.0)+pow(y,2.0));
-    dist2 = r;
-    dist1 = r-2.3;
-    cout<<"dist1: "<<dist1<<", dist2: "<<dist2<<endl;
-
-}
-
-void curvedVectorField2(double x, double y, double &u, double &v, double &dist1, double &dist2) {
-    y = y-2.5;
-    x = x-2.5-2.3;
-    u = 2.0*y;
-    v = -2.0*x;
-    double tot = sqrt(pow(u,2.0)+pow(v,2.0));
-    u = u/tot;
-    v = v/tot;
-    cout<<"u: "<<u<<", v: "<<v<<endl;
-    double r = sqrt(pow(x,2.0)+pow(y,2.0));
-    dist2 = r;
-    dist1 = r-2.3;
-    cout<<"dist1: "<<dist1<<", dist2: "<<dist2<<endl;
-}
-
-void straightVectorField(int i,double &u, double &v) {
-
-}
-
-
 
 
 // void multiplyMat(double A,double b[],double &x[]) {

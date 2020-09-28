@@ -21,7 +21,7 @@ using namespace arma;
 class vectorFieldMap {
     public:
     void initializeMap();
-    void updateHypotheses(double x, double y, double vx, double vy);
+    void updateHypotheses(double x, double y, double vx, double vy, double xRobot, double yRobot, double thetaRobot);
     void readMap(visualization_msgs::MarkerArray &staticMarkers,visualization_msgs::MarkerArray &dynamicMarkers);
     human_walking_detection::tubes globalTube;
     human_walking_detection::tubesH globalTubesH;
@@ -120,7 +120,7 @@ class vectorFieldMap {
     void walkStraight(double x1,double y1,double x2,double y2,human_walking_detection::tubes tube,vector<int> tube_indices, vector<double> x_ind, vector<double> y_ind);
     void newTubeSplitMiddle(human_walking_detection::tubes tube,double zFixed,double x[4],double y[4],int ind1,int ind2,double v1[2],double zBorder,human_walking_detection::lines &lines,human_walking_detection::lines &linesB);
     void plotLine(double x1, double x2, double y1, double y2, int i,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map);
-
-
-
+    void plotRobot(human_walking_detection::robot object);
+    void validatePointInSubTube(human_walking_detection::tube tube, double x, double y, double vx, double vy,vector<double> &prop);
+    void plotStandingTube(double x, double y, double radius, double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map);
 };
