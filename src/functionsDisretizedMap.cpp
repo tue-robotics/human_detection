@@ -175,7 +175,7 @@ lines.line[i].theta = atan2(lines.line[i].y[lines.line[i].outter]-tube.y,lines.l
 }
 tube.theta0 = lines.line[0].theta;
 tube.theta_tot = lines.line[1].theta-tube.theta0;
-if (fabs(tube.theta_tot)>0.02) {
+if (fabs(tube.theta_tot)>0.1) {
     tube.empty = false;
 tube.wrap = 0;
 if (tube.theta_tot<-M_PI) {
@@ -822,7 +822,6 @@ void vectorFieldMap::createGraph(human_walking_detection::tubes tube, graph &G) 
         // for (double p = 0.0;p<1.1*tube.tube[i].main.pTot;p = p + tube.tube[i].main.pTot) {
         for (int pInd = 0;pInd<2;pInd++) {
             p = pVars[pInd];
-            // cout<<"p test: "<< p << endl;
             O = Fry(tube.tube[i].main,p,(tube.tube[i].main.min+tube.tube[i].main.max)/2.0,false);
             calcGradient(tube.tube[i].main,O.x,O.y,u,v);
             // for (double s=step;s>0.0;s=-step) {
@@ -1468,13 +1467,37 @@ void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, 
         createTubeHypothesis(globalTube,store,G,robot,tubesH);
         validateHypotheses(x, y, vx, vy, tubesH);
 
+
+        vector<bool> visitedH;
+        // vector<double> p;
+        // vector<double> pStore;
+        // vector<int> tubeStore;
+        for (int i = 0; i< hypotheses.hypotheses.size(); i++) {
+            visitedH.push_back(false);
+        } 
+        double p;
+        for (int i = 0; i< hypotheses.hypotheses.size(); i++) {
+            if (!visitedH[i]) {
+                p = hypotheses.hypotheses[i].pAOI;
+                visitedH[i] = true;
+                for (int j = 0; j<hypotheses.hypotheses.size(); j++) {
+                    if (!visitedH[j]) {
+                        if (G.ALink[hypotheses.hypotheses[i].index]==G.ALink[hypotheses.hypotheses[j].index]) {
+                            p = p + hypotheses.hypotheses[j].pAOI;
+                            visitedH[j] = true;
+                        }
+                    }
+                }
+                plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].main,10,dynamicMap.markers.size(),p*0.95+0.05,"AoIMap",hypotheses.hypotheses[i].pStore,dynamicMap);
+            }
+        } 
+
         globalTubesH.tubeH = tubesH;
         for (int i = 0; i<tubesH.size(); i++) {
             for (int j = 0; j<tubesH[i].tube.size();j++) {
                 plotTube(tubesH[i].tube[j].main,20,2,dynamicMap.markers.size(),0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*0.95+0.05,"dyamicMap",dynamicMap);
                 // plotTube(tubesH[i].tube[j].main,1,50,j+i*100,0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p/0.8+0.2,"AoIMap",dynamicMap);
             }
-            plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].main,10,dynamicMap.markers.size(),hypotheses.hypotheses[i].pAOI*0.95+0.05,"AoIMap",hypotheses.hypotheses[i].pStore,dynamicMap);
         }
         for (int i = 0; i<tubesH.size(); i++) {
             for (int j = 0; j<tubesH[i].tube.size();j++) {
@@ -2093,7 +2116,7 @@ if (count>0) {
             pVar1 = pr[ind1];
             zVar2 = zMat[ind2];
             pVar2 = pr[ind2];
-            plotLine(x[top[0]], x[bottom[0]], y[top[0]], y[bottom[0]],dynamicMap.markers.size() ,1, 0, 0.5, 0.9, "robotF",dynamicMap);
+            // plotLine(x[top[0]], x[bottom[0]], y[top[0]], y[bottom[0]],dynamicMap.markers.size() ,1, 0, 0.5, 0.9, "robotF",dynamicMap);
 
             O1 = Fry(tube.tube[indBox[ind1]].main,pMat[ind1],zVar1,1);
             O2 = Fry(tube.tube[indBox[ind1]].main,pMat[ind1],zVarEnd,1);
@@ -2235,7 +2258,7 @@ void vectorFieldMap::initializeMap() {
 
     robot.x = 6.5;
     robot.y = 8.5;
-    robot.l = 1.5;
+    robot.l = 1.2;
     robot.b = 0.75;
     robot.theta = M_PI;
     robot.df = 1.0;
@@ -2306,44 +2329,20 @@ void vectorFieldMap::initializeMap() {
 
     lineTemp = createLineTemp(0.0,0.0,0.0,2.5,0.0,0.0);
     lines.line.push_back(lineTemp);
+//
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(0.0,2.5,0.0,0.0,0.0,0.0);
+    lines.line.push_back(lineTemp);
 
     linesToTube(lines,globalTube,0,TBC,0);
     lines.line.push_back(lineTemp);
     
-    lineTemp = createLineTemp(0.0,2.2,0.0,0.0,0.0,0.0);
+    lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
     lines.line.push_back(lineTemp);
 
     linesToTube(lines,globalTube,0,TBC,0);
-    lines.line.push_back(lineTemp);
-    
-    lineTemp = createLineTemp(2.2,2.2,0.0,2.5,0.0,0.0);
-    lines.line.push_back(lineTemp);
-
-    linesToTube(lines,globalTube,0,TBC,0);
-    
-    lineTemp = createLineTemp(0.0,2.2,0.0,0.0,0.0,0.0);
-    lines.line.push_back(lineTemp);
-
-    lineTemp = createLineTemp(0.0,2.2,-0.1,-0.1,0.0,0.0);
-    lines.line.push_back(lineTemp);
-
-    linesToTube(lines,globalTube,0,TBC,1);
-    
-    lineTemp = createLineTemp(0.0,0.0,0,2.5,0.0,0.0);
-    lines.line.push_back(lineTemp);
-
-    lineTemp = createLineTemp(2.2,2.2,0,2.5,0.0,0.0);
-    lines.line.push_back(lineTemp);
-
-    linesToTube(lines,globalTube,0,TBC,0);
-    
-    lines.line.push_back(lineTemp);
-    lineTemp = createLineTemp(2.5,2.5,0,2.5,0.0,0.0);
-    lines.line.push_back(lineTemp);
-
-    linesToTube(lines,globalTube,0,TBC,0);
-    
-    lineTemp = createLineTemp(0.0,0.0,0.0,2.5,0.0,0.0);
     lines.line.push_back(lineTemp);
 
     lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
@@ -2351,7 +2350,54 @@ void vectorFieldMap::initializeMap() {
 
     linesToTube(lines,globalTube,0,TBC,0);
     lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,0.0,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(0.0,2.5,-0.1,-0.1,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // linesToTube(lines,globalTube,0,TBC,1);
     
+    lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(2.2,2.2,0,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    
+    // lineTemp = createLineTemp(0.0,0.0,0,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // linesToTube(lines,globalTube,0,TBC,0);
+    // lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,2.5,0.0,0.0,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+
+    
+    lineTemp = createLineTemp(0.0,2.5,-0.1,-0.1,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    // lines.line.push_back(lineTemp);
+//
+    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
     lineTemp = createLineTemp(0.0,2.5,7.3,7.3,0.0,0.0);
     lines.line.push_back(lineTemp);
 
@@ -2369,21 +2415,21 @@ void vectorFieldMap::initializeMap() {
 
     linesToTube(lines,globalTube,0,TBC,1);
     
-    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
-    lines.line.push_back(lineTemp);
+    // lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
 
-    lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
-    lines.line.push_back(lineTemp);
+    // lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
 
-    linesToTube(lines,globalTube,0,TBC,0);
+    // linesToTube(lines,globalTube,0,TBC,0);
     
-    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
-    lines.line.push_back(lineTemp);
+    // lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
 
-    lineTemp = createLineTemp(0.0,2.3,0.0,0.0,0.0,0.0);
-    lines.line.push_back(lineTemp);
+    // lineTemp = createLineTemp(0.0,2.3,0.0,0.0,0.0,0.0);
+    // lines.line.push_back(lineTemp);
 
-    linesToTube(lines,globalTube,0,TBC,0);
+    // linesToTube(lines,globalTube,0,TBC,0);
     
     lineTemp = createLineTemp(0.0,2.5,7.3,7.3,0.0,0.0);
     lines.line.push_back(lineTemp);
@@ -2538,23 +2584,4 @@ void vectorFieldMap::initializeMap() {
     createGraph(globalTube, G);
     createGraphShort(globalTube, G);
     cout<<"Static map created"<< endl;
-
-    // cout<<endl;
-        // cout<<staticMap.markers.size()<<endl;
-
-        // [store,~] = createDynamicAsOI(globalTube,human,G,[],seenTubes,person.dMax);
-
-        // for (int i = 0; i<store.size();i++) { 
-        //     for (int j = 0;j<10;j++) {
-        //         z = tube{store(i).index}.min+j*(tube{store(i).index}.max-tube{store(i).index}.min)/10.0;
-        //         O = Fry(tube{store(i).index},store(i).pStore,z,0);
-        //         plot(O.x,O.y,'.g');
-        //     }
-        // }
-
-        // tubesH = createTubeHypothesis(tube,store,G,robot);
-
-
-        // plotAll(1:length(tubesH),1:3,tube,tubesH,store,person,robot)
-
 }

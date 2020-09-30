@@ -1,10 +1,10 @@
 #rostopic pub 
 #/ropod/human_navigation_detection/map human_navigation_detection/walls 
 a: 100000
-real: true
-xCamera: 6.5
-yCamera: 8.5
-thetaCamera: 3.14
+real: false
+xRobot: 1.5
+yRobot: 4.5
+thetaRobot: -1.57 #3.14
 # testingP:
 #   a: 1.0
 #   b: 2.0
@@ -19,255 +19,255 @@ originMap:
 
 
 
-# walls:
-# -
-#   id: 0
-#   label: "wall" 
-#   x0: -8.4
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 0.0
-#   y1: 0.0
-#   z1: 0.0
-# -
-#   id: 1
-#   label: "wall" 
-#   x0: 2.2
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 5.43
-#   y1: 0.0
-#   z1: 0.0
-# -
-#   id: 2
-#   label: "wall" 
-#   x0: 6.25
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 7.33
-#   y1: 0.0
-#   z1: 0.0
-# -
-#   id: 3
-#   label: "wall" 
-#   x0: 8.1
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 9.5
-#   y1: 0.0
-#   z1: 0.0
-# -
-#   id: 4
-#   label: "wall" 
-#   x0: 9.5
-#   y0: 2.5
-#   z0: 0.0
-#   x1: 9.5
-#   y1: 9.3
-#   z1: 0.0
-# -
-#   id: 5
-#   label: "wall" 
-#   x0: 2.2
-#   y0: 9.3
-#   z0: 0.0
-#   x1: 9.5
-#   y1: 9.3
-#   z1: 0.0
-# -
-#   id: 6
-#   label: "wall" 
-#   x0: 0.0
-#   y0: 2.5
-#   z0: 0.0
-#   x1: 0.0
-#   y1: 9.3
-#   z1: 0.0
-# -
-#   id: 7
-#   label: "wall" 
-#   x0: -4.5
-#   y0: 2.5
-#   z0: 0.0
-#   x1: 0.0
-#   y1: 2.5
-#   z1: 0.0
-# -
-#   id: 8
-#   label: "wall" 
-#   x0: -8.4
-#   y0: 2.5
-#   z0: 0.0
-#   x1: -5.9
-#   y1: 2.5
-#   z1: 0.0
-# -
-#   id: 9
-#   label: "wall" 
-#   x0: 2.5
-#   y0: 2.5
-#   z0: 0.0
-#   x1: 2.5
-#   y1: 7.3
-#   z1: 0.0
-# -
-#   id: 10
-#   label: "wall" 
-#   x0: 4.8
-#   y0: 2.5
-#   z0: 0.0
-#   x1: 7.3
-#   y1: 2.5
-#   z1: 0.0
-# -
-#   id: 11
-#   label: "wall" 
-#   x0: 7.3
-#   y0: 2.5
-#   z0: 0.0
-#   x1: 7.3
-#   y1: 7.3
-#   z1: 0.0
-# -
-#   id: 12
-#   label: "wall" 
-#   x0: 4.8
-#   y0: 7.3
-#   z0: 0.0
-#   x1: 7.3
-#   y1: 7.3
-#   z1: 0.0
+walls:
+-
+  id: 0
+  label: "wall" 
+  x0: -8.4
+  y0: 0.0
+  z0: 0.0
+  x1: 0.0
+  y1: 0.0
+  z1: 0.0
+-
+  id: 1
+  label: "wall" 
+  x0: 2.2
+  y0: 0.0
+  z0: 0.0
+  x1: 5.43
+  y1: 0.0
+  z1: 0.0
+-
+  id: 2
+  label: "wall" 
+  x0: 6.25
+  y0: 0.0
+  z0: 0.0
+  x1: 7.33
+  y1: 0.0
+  z1: 0.0
+-
+  id: 3
+  label: "wall" 
+  x0: 8.1
+  y0: 0.0
+  z0: 0.0
+  x1: 9.5
+  y1: 0.0
+  z1: 0.0
+-
+  id: 4
+  label: "wall" 
+  x0: 9.5
+  y0: 2.5
+  z0: 0.0
+  x1: 9.5
+  y1: 9.3
+  z1: 0.0
+-
+  id: 5
+  label: "wall" 
+  x0: 2.2
+  y0: 9.3
+  z0: 0.0
+  x1: 9.5
+  y1: 9.3
+  z1: 0.0
+-
+  id: 6
+  label: "wall" 
+  x0: 0.0
+  y0: 2.5
+  z0: 0.0
+  x1: 0.0
+  y1: 9.3
+  z1: 0.0
+-
+  id: 7
+  label: "wall" 
+  x0: -4.5
+  y0: 2.5
+  z0: 0.0
+  x1: 0.0
+  y1: 2.5
+  z1: 0.0
+-
+  id: 8
+  label: "wall" 
+  x0: -8.4
+  y0: 2.5
+  z0: 0.0
+  x1: -5.9
+  y1: 2.5
+  z1: 0.0
+-
+  id: 9
+  label: "wall" 
+  x0: 2.5
+  y0: 2.5
+  z0: 0.0
+  x1: 2.5
+  y1: 7.3
+  z1: 0.0
+-
+  id: 10
+  label: "wall" 
+  x0: 4.8
+  y0: 2.5
+  z0: 0.0
+  x1: 7.3
+  y1: 2.5
+  z1: 0.0
+-
+  id: 11
+  label: "wall" 
+  x0: 7.3
+  y0: 2.5
+  z0: 0.0
+  x1: 7.3
+  y1: 7.3
+  z1: 0.0
+-
+  id: 12
+  label: "wall" 
+  x0: 4.8
+  y0: 7.3
+  z0: 0.0
+  x1: 7.3
+  y1: 7.3
+  z1: 0.0
 
 
-# AoI:    
-# -
-#   id: 0
-#   label: "deur lab x"
-#   x0: 0.0
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 2.2
-#   y1: 0.0
-#   z1: 0.0
-# -
-#   id: 1
-#   label: "deur toilet mannen"
-#   x0: 5.43
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 6.25
-#   y1: 0.0
-#   z1: 0.0  
-# -
-#   id: 2
-#   label: "non used door" 
-#   x0: 7.33
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 8.1
-#   y1: 0.0
-#   z1: 0.0 
-# -
-#   id: 3
-#   label: "door aes lab" 
-#   x0: 9.5
-#   y0: 0.0
-#   z0: 0.0
-#   x1: 9.5
-#   y1: 2.5
-#   z1: 0.0
-# -
-#   id: 4
-#   label: "stairs up" 
-#   x0: 2.5
-#   y0: 2.5
-#   z0: 0.0
-#   x1: 4.8
-#   y1: 2.5
-#   z1: 0.0
-# -
-#   id: 5
-#   label: "stairs down" 
-#   x0: 2.5
-#   y0: 7.3
-#   z0: 0.0
-#   x1: 4.8
-#   y1: 7.3
-#   z1: 0.0
-# -
-#   id: 6
-#   label: "door lab x" 
-#   x0: 0.0
-#   y0: 9.3
-#   z0: 0.0
-#   x1: 2.2
-#   y1: 9.3
-#   z1: 0.0
-# -
-#   id: 7
-#   label: "door lab tech united" 
-#   x0: -5.9
-#   y0: 2.5
-#   z0: 0.0
-#   x1: -4.5
-#   y1: 2.5
-#   z1: 0.0
-# -
-#   id: 8
-#   label: "hallway robotics lab" 
-#   x0: -8.4
-#   y0: 0.0
-#   z0: 0.0
-#   x1: -8.4
-#   y1: 2.5
-#   z1: 0.0
+AoI:    
+-
+  id: 0
+  label: "deur lab x"
+  x0: 0.0
+  y0: 0.0
+  z0: 0.0
+  x1: 2.2
+  y1: 0.0
+  z1: 0.0
+-
+  id: 1
+  label: "deur toilet mannen"
+  x0: 5.43
+  y0: 0.0
+  z0: 0.0
+  x1: 6.25
+  y1: 0.0
+  z1: 0.0  
+-
+  id: 2
+  label: "non used door" 
+  x0: 7.33
+  y0: 0.0
+  z0: 0.0
+  x1: 8.1
+  y1: 0.0
+  z1: 0.0 
+-
+  id: 3
+  label: "door aes lab" 
+  x0: 9.5
+  y0: 0.0
+  z0: 0.0
+  x1: 9.5
+  y1: 2.5
+  z1: 0.0
+-
+  id: 4
+  label: "stairs up" 
+  x0: 2.5
+  y0: 2.5
+  z0: 0.0
+  x1: 4.8
+  y1: 2.5
+  z1: 0.0
+-
+  id: 5
+  label: "stairs down" 
+  x0: 2.5
+  y0: 7.3
+  z0: 0.0
+  x1: 4.8
+  y1: 7.3
+  z1: 0.0
+-
+  id: 6
+  label: "door lab x" 
+  x0: 0.0
+  y0: 9.3
+  z0: 0.0
+  x1: 2.2
+  y1: 9.3
+  z1: 0.0
+-
+  id: 7
+  label: "door lab tech united" 
+  x0: -5.9
+  y0: 2.5
+  z0: 0.0
+  x1: -4.5
+  y1: 2.5
+  z1: 0.0
+-
+  id: 8
+  label: "hallway robotics lab" 
+  x0: -8.4
+  y0: 0.0
+  z0: 0.0
+  x1: -8.4
+  y1: 2.5
+  z1: 0.0
 
 
 
-# tubes:
-# - 
-#   from: 8
-#   to: 3
-#   tube:
-#   -
-#     type: "straight"
-#     x_start: -8.4
-#     y_start: 0.0
-#     z_start: 0.0
-#     x_end: 9.5
-#     y_end: 0.0
-#     z_end: 0.0
-#     height: 2.5
-# -
-#   from: 8
-#   to: 6
-#   tube:
-#   -
-#     type: "straight"
-#     x_start: -8.4
-#     y_start: 0.0
-#     z_start: 0.0
-#     x_end: 0.0
-#     y_end: 0.0
-#     z_end: 0.0
-#     height: 2.5
-#   -
-#     type: "turn"
-#     x_rotation: 0.0
-#     y_rotation: 2.5
-#     z_rotation: 0.0
-#     theta_start: -1.57 
-#     theta_end: 0.0
-#     z: 0.0
-#     r_start: 0.0
-#     r_end: 2.5
-#   -
-#     type: "straight"
-#     x_start: 0.0
-#     y_start: 2.5
-#     z_start: 0.0
-#     x_end: 0.0
-#     y_end: 9.3
-#     z_end: 0.0
-#     height: 2.5
+tubes:
+- 
+  from: 8
+  to: 3
+  tube:
+  -
+    type: "straight"
+    x_start: -8.4
+    y_start: 0.0
+    z_start: 0.0
+    x_end: 9.5
+    y_end: 0.0
+    z_end: 0.0
+    height: 2.5
+-
+  from: 8
+  to: 6
+  tube:
+  -
+    type: "straight"
+    x_start: -8.4
+    y_start: 0.0
+    z_start: 0.0
+    x_end: 0.0
+    y_end: 0.0
+    z_end: 0.0
+    height: 2.5
+  -
+    type: "turn"
+    x_rotation: 0.0
+    y_rotation: 2.5
+    z_rotation: 0.0
+    theta_start: -1.57 
+    theta_end: 0.0
+    z: 0.0
+    r_start: 0.0
+    r_end: 2.5
+  -
+    type: "straight"
+    x_start: 0.0
+    y_start: 2.5
+    z_start: 0.0
+    x_end: 0.0
+    y_end: 9.3
+    z_end: 0.0
+    height: 2.5
 

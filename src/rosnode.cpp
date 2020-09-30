@@ -13,15 +13,14 @@ void rosNode::initialize() {
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
     n.getParam("/human_walking_detection/a",iMax);
     n.getParam("/human_walking_detection/real",real);
-    n.getParam("/human_walking_detection/xCamera",xRobot);
-    n.getParam("/human_walking_detection/yCamera",yRobot);
-    n.getParam("/human_walking_detection/thetaCamera",thetaRobot);
+    n.getParam("/human_walking_detection/xRobot",xRobot);
+    n.getParam("/human_walking_detection/yRobot",yRobot);
+    n.getParam("/human_walking_detection/thetaRobot",thetaRobot);
     if (real) {
         subHuman = n.subscribe("/Jetson/cameraDetections",1000, &rosNode::updateRealMeasurement, this);
     } else {
         subHuman = n.subscribe("/virtualHuman/pose",1000, &rosNode::updateFakeMeasurement, this);
     }   
-    
     processMap();
     humanPosVel.x = 0.0;
     humanPosVel.y = 0.0;
@@ -29,10 +28,6 @@ void rosNode::initialize() {
     humanPosVel.vy = 0.0;
     measurement.push_back(0.0);
     measurement.push_back(0.0);
-    p1 = 0.0;
-    p2 = 0.0;
-    p3 = 0.0;
-    p4 = 0.0;
 }
 
 void rosNode::createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, double a, visualization_msgs::Marker &marker) {
