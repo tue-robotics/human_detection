@@ -55,10 +55,9 @@ include_directories(
 
 
 add_executable(human_walking_detection src/rosnode.cpp src/main.cpp src/functions.cpp src/functionsDisretizedMap.cpp)
+add_executable(human_walking_detection_process src/toTXT.cpp)
 target_link_libraries(human_walking_detection ${catkin_LIBRARIES})
 add_dependencies(human_walking_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(napoleon_navigation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#add_dependencies(human_walking_detection ${catkin_EXPORTED_TARGETS})
+target_link_libraries(human_walking_detection_process ${catkin_LIBRARIES})
+add_dependencies(human_walking_detection_process ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-
-#add_executable(human_walking_detection src/rosnode.cpp)

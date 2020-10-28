@@ -1,13 +1,8 @@
-#rostopic pub 
-#/ropod/human_navigation_detection/map human_navigation_detection/walls 
-a: 100000
-real: false
+real: true
 xRobot: 1.5
 yRobot: 4.5
 thetaRobot: -1.57 #3.14
-# testingP:
-#   a: 1.0
-#   b: 2.0
+
 originMap:
 -
   xT: 0.0
@@ -224,50 +219,4 @@ AoI:
 
 
 
-tubes:
-- 
-  from: 8
-  to: 3
-  tube:
-  -
-    type: "straight"
-    x_start: -8.4
-    y_start: 0.0
-    z_start: 0.0
-    x_end: 9.5
-    y_end: 0.0
-    z_end: 0.0
-    height: 2.5
--
-  from: 8
-  to: 6
-  tube:
-  -
-    type: "straight"
-    x_start: -8.4
-    y_start: 0.0
-    z_start: 0.0
-    x_end: 0.0
-    y_end: 0.0
-    z_end: 0.0
-    height: 2.5
-  -
-    type: "turn"
-    x_rotation: 0.0
-    y_rotation: 2.5
-    z_rotation: 0.0
-    theta_start: -1.57 
-    theta_end: 0.0
-    z: 0.0
-    r_start: 0.0
-    r_end: 2.5
-  -
-    type: "straight"
-    x_start: 0.0
-    y_start: 2.5
-    z_start: 0.0
-    x_end: 0.0
-    y_end: 9.3
-    z_end: 0.0
-    height: 2.5
 

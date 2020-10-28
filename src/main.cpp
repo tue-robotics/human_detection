@@ -67,8 +67,8 @@ int main(int argc, char** argv)
         rosNode.visualizeMeasuredHuman();
         rosNode.visualizeRobot();
         
-        // ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1000.0)); // Call ROS stream and wait 1000 sec if no new measurement
-        ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0)); // Call ROS stream and wait 1 sec if no new measurement
+        ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1000.0)); // Call ROS stream and wait 1000 sec if no new measurement
+        // ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0)); // Call ROS stream and wait 1 sec if no new measurement
 
         dt = ros::Time::now().toSec()-prevIt;
         updateKalman(A,H,P,Q,R,I,rosNode.humanPosVel,rosNode.measurement,dt);

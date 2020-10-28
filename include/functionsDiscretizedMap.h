@@ -26,6 +26,8 @@ class vectorFieldMap {
     human_walking_detection::tubes globalTube;
     human_walking_detection::tubesH globalTubesH;
     human_walking_detection::hypotheses hypotheses;
+    // vector<human_walking_detection::tubes> tubesH;
+
 
     struct positionVars {
         float x;

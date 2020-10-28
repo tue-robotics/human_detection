@@ -38,6 +38,7 @@ class rosNode {
         ros::Publisher tubeTop;
         ros::Publisher tubeHTop;
         ros::Publisher hypothesesTop;
+        ros::Publisher humanSpeed;
 
         ros::NodeHandle n;
 

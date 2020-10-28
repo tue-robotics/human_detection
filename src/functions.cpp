@@ -2,7 +2,7 @@
 
 void getLikelihood(double u, double v, double v_x, double v_y, double d_side1, double d_side2, double &likelihood) {
     double t = 1.0; // time to constraint remaining inside tube
-    double sideMargin = 0.4; // higher is more conservative on lateral speed constraints (has to follow tube more)
+    double sideMargin = 0.5; // higher is more conservative on lateral speed constraints (has to follow tube more)
     double v_min = 0.1; // minimal absolute speed to remain "moving" towards goal
     double speedMargin = 0.5; // higher is more conservative on minimal speed constraint
 

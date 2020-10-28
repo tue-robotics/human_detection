@@ -6,6 +6,7 @@ void rosNode::initialize() {
     measuredHuman = n.advertise<visualization_msgs::Marker>("/HWD/measuredHuman",3);
     virtualRobot = n.advertise<visualization_msgs::Marker>("/HWD/virtualRobot",3);
     humanState = n.advertise<visualization_msgs::Marker>("/HWD/humanState",3);
+    humanSpeed = n.advertise<visualization_msgs::Marker>("/HWD/humanSpeed",3);
     humanPV = n.advertise<human_walking_detection::PoseVel>("/HWD/trackedHuman",3);
     tubeTop = n.advertise<human_walking_detection::tubes>("/HWD/tubes",3);
     tubeHTop = n.advertise<human_walking_detection::tubesH>("/HWD/tubesH",3);
@@ -33,14 +34,6 @@ void rosNode::initialize() {
 void rosNode::createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, double a, visualization_msgs::Marker &marker) {
     double dx,dy,dz, dist;
     double t3,t2,t1;
-
-    // double xL,yL,zL,xR,yR,zR;
-    // xL = 1;
-    // yL = 0;
-    // zL = 0.0;
-    // xR = 1;
-    // yR = 1;
-    // zR = 0.0;
 
     dx = xL-xR;
     dy = yL-yR;
@@ -81,8 +74,8 @@ void rosNode::updateFakeMeasurement(const human_walking_detection::Pose& poseHum
 
 void rosNode::updateRealMeasurement(const camera_detector::detections& poseHuman) {
     if (poseHuman.detections.size()>0) {
-        measurement[0] = cos(thetaRobot) * (poseHuman.detections[0].x+0.6) - sin(thetaRobot) * poseHuman.detections[0].y + xRobot;
-        measurement[1] = sin(thetaRobot) * (poseHuman.detections[0].x+0.6) + cos(thetaRobot) * poseHuman.detections[0].y + yRobot;
+        measurement[0] = cos(thetaRobot) * (poseHuman.detections[0].x) - sin(thetaRobot) * poseHuman.detections[0].y + xRobot;
+        measurement[1] = sin(thetaRobot) * (poseHuman.detections[0].x) + cos(thetaRobot) * poseHuman.detections[0].y + yRobot;
     }
 }
 
@@ -100,17 +93,17 @@ void rosNode::processMap() {
     n.getParam("/human_walking_detection/AoI",AoI);
 // plot walls
     for (int i=0;i<walls.size();i++) {
-        createLine(i,walls[i]["x0"],walls[i]["y0"],walls[i]["z0"],walls[i]["x1"],walls[i]["y1"],walls[i]["z1"],1.0,0.0,0.0,0.05,0.7,markerA);
+        createLine(i,walls[i]["x0"],walls[i]["y0"],walls[i]["z0"],walls[i]["x1"],walls[i]["y1"],walls[i]["z1"],1.0,0.0,0.0,0.05,0.4,markerA);
         markerArrayWalls.markers.push_back(markerA);
     }
 // plot Areas of Interest
     markerA.ns = "AoI";
     for (int i=0;i<AoI.size();i++) {
         if (i==3&&i==4&&i==8) {
-            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.0,0.3,0.0,0.05,0.4,markerA);
+            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.0,0.3,0.0,0.05,0.1,markerA);
             markerArrayAoI.markers.push_back(markerA);
         } else {
-            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.3,0.0,0.0,0.05,0.4,markerA);
+            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.3,0.0,0.0,0.05,0.1,markerA);
             markerArrayAoI.markers.push_back(markerA);
         }
     }
@@ -151,9 +144,30 @@ void rosNode::publishHumanPV() {
 void rosNode::visualizeHuman() {
     markerA.ns = "humanState";
     createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,1.0,markerA);
-    // createLine(1,6.5,8.2,0.0,6.5,8.2,1.8,0.0,0.0,1.0,0.3,markerA);
     humanState.publish (deleteAllMarker);
     humanState.publish (markerA);
+    visualization_msgs::Marker markerSpeed;
+    geometry_msgs::Point sample;
+    sample.x  = humanPosVel.x;
+    sample.y = humanPosVel.y;
+    sample.z = 0.0;
+    markerSpeed.points.push_back(sample);
+    sample.x = humanPosVel.x + humanPosVel.vx;
+    sample.y = humanPosVel.y + humanPosVel.vy;
+    sample.z = 0.0;
+    markerSpeed.points.push_back(sample);
+    markerSpeed.type = visualization_msgs::Marker::ARROW;
+    markerSpeed.header.stamp = ros::Time();
+
+    markerSpeed.scale.x = 0.07;
+    markerSpeed.scale.y = 0.1;
+    markerSpeed.color.a = 1;
+    markerSpeed.color.r = 0;
+    markerSpeed.color.g = 0;
+    markerSpeed.color.b = 1;
+    markerSpeed.ns = "wall";
+    markerSpeed.header.frame_id = "/semanticMap";
+    humanSpeed.publish(markerSpeed);
 }
 
 void rosNode::visualizeMeasuredHuman() {
