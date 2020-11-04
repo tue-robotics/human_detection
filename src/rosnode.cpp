@@ -20,7 +20,7 @@ void rosNode::initialize() {
     if (real) {
         subHuman = n.subscribe("/Jetson/cameraDetections",1000, &rosNode::updateRealMeasurement, this);
     } else {
-        subHuman = n.subscribe("/virtualHuman/pose",1000, &rosNode::updateFakeMeasurement, this);
+        subHuman = n.subscribe("/Human/pose",1000, &rosNode::updateFakeMeasurement, this);
     }   
     processMap();
     humanPosVel.x = 0.0;
