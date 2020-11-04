@@ -14,25 +14,25 @@ roslaunch human_walking_detection human_walking_detection.launch
 Visualisations could be extracted by using rviz.
 
 ## Functions in vectorFieldMap class explained
- linesToTube
+ linesToTube<br/>
  Creates a geometric based vector field between two or more lines including gradient constraints at the end of these lines
  
- findPointInTube
+ findPointInTube<br/>
  Returns the fields a detected human in x and y, is currently in.
  
- calcGradient
+ calcGradient<br/>
  Returns the gradient of a field at a position x, y.
  
- addObject
+ addObject<br/>
  Adds fields around and towards an object.
  
- createGraph
+ createGraph<br/>
  Creates graph, representing the connected fields
  
- plotTube
+ plotTube<br/>
  Visualise a field in RVIZ
  
- walkConstant
+ walkConstant<br/>
  Returns the x,y position at a distance ds perpendicular to a streamlines of a field
  
  
