@@ -3,4 +3,4 @@ This package adds human estimation functionalities based on a published human po
 
 
 ## Video - Human Intention Prediction
-![Human Intention Prediction](figures/performance.avi?raw=true "Human Intention Prediction")
+![Human Intention Prediction](figures/performance.gif?raw=true "Human Intention Prediction")
