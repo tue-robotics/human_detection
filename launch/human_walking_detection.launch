@@ -4,15 +4,18 @@
 
     <node pkg="tf" type="static_transform_publisher" name="map2semanticMap" args="1.8 0.4 0 -0.23 0 0 /map /semanticMap 100" /> 
 
-    <node name="human_walking_detection" pkg="human_walking_detection" type="human_walking_detection" output="screen">
+    <!-- Default -->
+    <!--<node name="human_walking_detection" pkg="human_walking_detection" type="human_walking_detection" output="screen">-->
+
+    <!-- Debug with gdb-->
+    <!--<node name="human_walking_detection" pkg="human_walking_detection" type="human_walking_detection" output="screen" launch-prefix="xterm -e gdb -_-args">-->
+
+    <!-- Debug with gdb, not required to enter "run" to start execution -->
+    <node name="human_walking_detection" pkg="human_walking_detection" type="human_walking_detection" output="screen"  launch-prefix="gdb -ex run --args">
      
-        <rosparam file="$(find human_walking_detection)/map/map.yaml"/>    
-        <!-- <rosparam>
-            a: 6
-        </rosparam> -->
-        
-        
-    </node>        
-        
+        <rosparam file="$(find human_walking_detection)/map/map.yaml"/>
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find human_walking_detection)/launch/visualization.rviz"/>
     
 </launch>
