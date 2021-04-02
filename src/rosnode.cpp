@@ -1,27 +1,32 @@
 #include <rosnode.h>
 
+rosNode::rosNode(void): tfListener(tfBuffer){ };
 
 void rosNode::initialize() {
     cout<<"Starting ROS publisher..."<<endl;
-    measuredHuman = n.advertise<visualization_msgs::Marker>("/HWD/measuredHuman",3);
-    virtualRobot = n.advertise<visualization_msgs::Marker>("/HWD/virtualRobot",3);
-    humanState = n.advertise<visualization_msgs::Marker>("/HWD/humanState",3);
-    humanSpeed = n.advertise<visualization_msgs::Marker>("/HWD/humanSpeed",3);
-    humanPV = n.advertise<human_walking_detection::PoseVel>("/HWD/trackedHuman",3);
-    tubeTop = n.advertise<human_walking_detection::tubes>("/HWD/tubes",3);
-    tubeHTop = n.advertise<human_walking_detection::tubesH>("/HWD/tubesH",3);
-    hypothesesTop = n.advertise<human_walking_detection::hypotheses>("/HWD/hypotheses",3);
+    measuredHuman = n.advertise<visualization_msgs::Marker>("/HIP/measuredHuman",3);
+    virtualRobot = n.advertise<visualization_msgs::Marker>("/HIP/virtualRobot",3);
+    humanState = n.advertise<visualization_msgs::Marker>("/HIP/humanState",3);
+    humanSpeed = n.advertise<visualization_msgs::Marker>("/HIP/humanSpeed",3);
+    humanPV = n.advertise<human_intention_prediction::PoseVel>("/HIP/trackedHuman",3);
+    tubeTop = n.advertise<human_intention_prediction::tubes>("/HIP/tubes",3);
+    tubeHTop = n.advertise<human_intention_prediction::tubesH>("/HIP/tubesH",3);
+    hypothesesTop = n.advertise<human_intention_prediction::hypotheses>("/HIP/hypotheses",3);
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
-    n.getParam("/human_walking_detection/a",iMax);
-    n.getParam("/human_walking_detection/real",real);
-    n.getParam("/human_walking_detection/xRobot",xRobot);
-    n.getParam("/human_walking_detection/yRobot",yRobot);
-    n.getParam("/human_walking_detection/thetaRobot",thetaRobot);
+
+    n.getParam("/human_intention_prediction/a",iMax);
+    n.getParam("/human_intention_prediction/real",real);
+    n.getParam("/human_intention_prediction/robotName",robotName);
+    n.getParam("/human_intention_prediction/mapFrame", semanticMapFrame);
+
+    subRobotPose = n.subscribe(robotName + "/amcl_pose", 1000, &rosNode::updateRobotPose, this);
+    
     if (real) {
-        subHuman = n.subscribe("/Jetson/cameraDetections",1000, &rosNode::updateRealMeasurement, this);
+        subHuman = n.subscribe("/Jetson/cameraDetections", 1000, &rosNode::updateRealMeasurement, this);
     } else {
-        subHuman = n.subscribe("/Human/pose",1000, &rosNode::updateFakeMeasurement, this);
-    }   
+        subHuman = n.subscribe("/Human/pose", 1000, &rosNode::updateFakeMeasurement, this);
+    }
+
     processMap();
     humanPosVel.x = 0.0;
     humanPosVel.y = 0.0;
@@ -31,9 +36,14 @@ void rosNode::initialize() {
     measurement.push_back(0.0);
 }
 
-void rosNode::createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, double a, visualization_msgs::Marker &marker) {
+void rosNode::createLine(   int i,                                  // ID
+                            double xL, double yL, double zL,        // points low
+                            double xR, double yR, double zR,        // points high
+                            double r, double g, double b,           // rgb-values of color
+                            double radius, double a,                
+                            visualization_msgs::Marker &marker) {   // specified marker
     double dx,dy,dz, dist;
-    double t3,t2,t1;
+    double roll, pitch, yaw;
 
     dx = xL-xR;
     dy = yL-yR;
@@ -41,11 +51,11 @@ void rosNode::createLine(int i, double xL, double yL, double zL, double xR, doub
 
     dist = sqrt(pow(dx,2.0)+pow(dy,2.0)+pow(dz,2.0));
 
-    t1 = atan2(-dy,dx); //atan2(dy,dz)
-    t2 = atan2(sqrt(pow(dx,2.0)+pow(dy,2.0)),dz);
-    t3 = 0.0;
+    roll = atan2(sqrt(pow(dx,2.0)+pow(dy,2.0)),dz);
+    pitch = atan2(-dy,dx); //atan2(dy,dz)
+    yaw = 0.0;
     tf2::Quaternion angleQ;
-    angleQ.setEuler(t2,t1,t3);
+    angleQ.setEuler(roll,pitch,yaw);
     marker.header.stamp = ros::Time();
     marker.id = i;
     marker.type = visualization_msgs::Marker::CYLINDER;
@@ -66,16 +76,50 @@ void rosNode::createLine(int i, double xL, double yL, double zL, double xR, doub
     marker.color.b = b;
 }
 
-void rosNode::updateFakeMeasurement(const human_walking_detection::Pose& poseHuman) {
+void rosNode::updateFakeMeasurement(const human_intention_prediction::Pose& poseHuman) {
     measurement[0] = poseHuman.x;
     measurement[1] = poseHuman.y;
-    // cout<<"position: x = "<<measurement[0]<<", y = "<<measurement[1]<<endl;
 }
 
 void rosNode::updateRealMeasurement(const camera_detector::detections& poseHuman) {
     if (poseHuman.detections.size()>0) {
-        measurement[0] = cos(thetaRobot) * (poseHuman.detections[0].x) - sin(thetaRobot) * poseHuman.detections[0].y + xRobot;
-        measurement[1] = sin(thetaRobot) * (poseHuman.detections[0].x) + cos(thetaRobot) * poseHuman.detections[0].y + yRobot;
+
+        double xRobot = robotPose.pose.pose.position.x;
+        double yRobot = robotPose.pose.pose.position.y;
+
+        tf2::Quaternion q ( robotPose.pose.pose.orientation.x, robotPose.pose.pose.orientation.y, 
+                            robotPose.pose.pose.orientation.z, robotPose.pose.pose.orientation.w );
+        tf2::Matrix3x3 matrix ( q );
+        double rollRobot, pitchRobot, yawRobot;
+        matrix.getRPY ( rollRobot, pitchRobot, yawRobot );
+
+        // here, only first detection is considered(!)
+        measurement[0] = cos(yawRobot) * (poseHuman.detections[0].x) - sin(yawRobot) * poseHuman.detections[0].y + xRobot;
+        measurement[1] = sin(yawRobot) * (poseHuman.detections[0].x) + cos(yawRobot) * poseHuman.detections[0].y + yRobot;
+    }
+}
+
+void rosNode::updateRobotPose(const geometry_msgs::PoseWithCovarianceStamped& msg)
+{    geometry_msgs::TransformStamped transformStamped;
+    try{
+        string updatedFrameID = msg.header.frame_id;
+        // Check if frame-names start with a "/", as this is not allowed in order to determine the transformations
+        if (updatedFrameID.substr(0,1) == "/") {
+            updatedFrameID = updatedFrameID.substr (1,updatedFrameID.length()-1);
+        }
+
+        string updatedSemanticFrameID = semanticMapFrame;
+        if (updatedSemanticFrameID.substr(0,1) == "/") {
+            updatedSemanticFrameID = updatedSemanticFrameID.substr (1,updatedSemanticFrameID.length()-1);
+        }
+
+        transformStamped = tfBuffer.lookupTransform(updatedSemanticFrameID, updatedFrameID, ros::Time(0));
+        tf2::doTransform(msg, robotPose, transformStamped);
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("%s",ex.what());
+      ros::Duration(1.0).sleep();
+//      continue;
     }
 }
 
@@ -83,14 +127,15 @@ void rosNode::processMap() {
 /// [plot map]
 // create markers for visualization
     markerA.ns = "wall";
-    markerA.header.frame_id = "/semanticMap";
+    markerA.header.frame_id = semanticMapFrame;
     markerA.action = visualization_msgs::Marker::ADD;
-    semantic_map = n.advertise<visualization_msgs::MarkerArray>("/HWD/semanticMap",3);
-    dynamic_map = n.advertise<visualization_msgs::MarkerArray>("/HWD/dynamicMap",3);
+    //semantic_map = n.advertise<visualization_msgs::MarkerArray>("/HIP/semanticMap",3);
+    semantic_map = n.advertise<visualization_msgs::MarkerArray>("/HIP/" + semanticMapFrame,3);
+    dynamic_map = n.advertise<visualization_msgs::MarkerArray>("/HIP/dynamicMap",3);
 // obtain already published map information from yaml file
     XmlRpc::XmlRpcValue walls,AoI;
-    n.getParam("/human_walking_detection/walls",walls);
-    n.getParam("/human_walking_detection/AoI",AoI);
+    n.getParam("/human_intention_prediction/walls",walls);
+    n.getParam("/human_intention_prediction/AoI",AoI);
 // plot walls
     for (int i=0;i<walls.size();i++) {
         createLine(i,walls[i]["x0"],walls[i]["y0"],walls[i]["z0"],walls[i]["x1"],walls[i]["y1"],walls[i]["z1"],1.0,0.0,0.0,0.05,0.4,markerA);
@@ -128,12 +173,12 @@ void rosNode::removeDynamicMap() {
     dynamic_map.publish (deleteAllMarkerArray);
 }
 
-void rosNode::publishTube(human_walking_detection::tubes tube, human_walking_detection::tubesH tubesH) {
+void rosNode::publishTube(human_intention_prediction::tubes tube, human_intention_prediction::tubesH tubesH) {
     tubeTop.publish(tube);
     tubeHTop.publish(tubesH);
 }
 
-void rosNode::publishHypotheses(human_walking_detection::hypotheses hypotheses) {
+void rosNode::publishHypotheses(human_intention_prediction::hypotheses hypotheses) {
     hypothesesTop.publish(hypotheses);
 }
 
@@ -166,24 +211,41 @@ void rosNode::visualizeHuman() {
     markerSpeed.color.g = 0;
     markerSpeed.color.b = 1;
     markerSpeed.ns = "wall";
-    markerSpeed.header.frame_id = "/semanticMap";
+    markerSpeed.header.frame_id = semanticMapFrame;
     humanSpeed.publish(markerSpeed);
 }
 
 void rosNode::visualizeMeasuredHuman() {
     markerA.ns = "measuredHuman";
+    markerA.header.frame_id = semanticMapFrame;
+
     createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,1.0,markerA);
-    // createLine(1,4.5,8.4,0.0,4.5,8.4,1.8,0.5,0.5,0.5,0.3,markerA);
     measuredHuman.publish (deleteAllMarker);
     measuredHuman.publish (markerA);
 }
 
 void rosNode::visualizeRobot() {
-    // markerA.ns = "virtualRobot";
-    // // createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,markerA);
-    // createLine(1,0.0,1.4,0.0,0.0,1.4,1.8,0.5,0.5,0.5,0.3,1.0,markerA);
-    // virtualRobot.publish (deleteAllMarker);
-    // virtualRobot.publish (markerA);
+    markerA.ns = "virtualRobot";
+    markerA.header.frame_id = semanticMapFrame;
+
+    double xRobot = robotPose.pose.pose.position.x;
+    double yRobot = robotPose.pose.pose.position.y;
+
+    tf2::Quaternion q ( robotPose.pose.pose.orientation.x, robotPose.pose.pose.orientation.y, 
+                        robotPose.pose.pose.orientation.z, robotPose.pose.pose.orientation.w );
+    tf2::Matrix3x3 matrix ( q );
+    double rollRobot, pitchRobot, yawRobot;
+    matrix.getRPY ( rollRobot, pitchRobot, yawRobot );
+
+    int ID = 1;
+    double xL = xRobot, yL = yRobot, zL = 0.0;
+    double xR = xRobot, yR = yRobot, zR = 1.8;
+    double r = 153, g = 0.0, b = 153, a = 1.0;
+    double radius = 0.3;
+
+     createLine(ID, xL, yL, zL, xR, yR, zR, r, g, b, radius, a,markerA);
+     virtualRobot.publish (deleteAllMarker);
+     virtualRobot.publish (markerA);
 }
 
 void rosNode::setStaticMap(visualization_msgs::MarkerArray staticMap) {

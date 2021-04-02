@@ -1,7 +1,9 @@
 real: false
-xRobot: 1.5
-yRobot: 4.5
-thetaRobot: 0 #-1.57 #3.14
+#xRobot: 1.5
+#yRobot: 4.5
+#thetaRobot: 0 #-1.57 #3.14
+
+mapFrame: "/semanticMap"
 
 originMap:
 -
@@ -11,8 +13,6 @@ originMap:
   thetaT: 0.0 
   psiT: 0.0
   phiT: 0.0
-
-
 
 walls:
 -
@@ -137,7 +137,7 @@ walls:
 AoI:    
 -
   id: 0
-  label: "deur lab x"
+  label: "door lab x"
   x0: 0.0
   y0: 0.0
   z0: 0.0
@@ -146,7 +146,7 @@ AoI:
   z1: 0.0
 -
   id: 1
-  label: "deur toilet mannen"
+  label: "door toilet male"
   x0: 5.43
   y0: 0.0
   z0: 0.0
@@ -155,7 +155,7 @@ AoI:
   z1: 0.0  
 -
   id: 2
-  label: "non used door" 
+  label: "door unused" 
   x0: 7.33
   y0: 0.0
   z0: 0.0
@@ -200,7 +200,7 @@ AoI:
   z1: 0.0
 -
   id: 7
-  label: "door lab tech united" 
+  label: "door lab Tech United" 
   x0: -5.9
   y0: 2.5
   z0: 0.0

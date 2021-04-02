@@ -1,7 +1,7 @@
 #include <functionsDiscretizedMap.h>
 #include <functions.h>
 
-void vectorFieldMap::pointsToLine(human_walking_detection::lines &lines) {
+void vectorFieldMap::pointsToLine(human_intention_prediction::lines &lines) {
 for (int i=0;i<2;i++) {
     lines.line[i].a = lines.line[i].y[1] - lines.line[i].y[0];
     lines.line[i].b = lines.line[i].x[0] - lines.line[i].x[1];
@@ -23,7 +23,7 @@ double vectorFieldMap::sign(double var) {
     }
 }
 
-void vectorFieldMap::intersectLines(human_walking_detection::lines lines, positionVars &result) {
+void vectorFieldMap::intersectLines(human_intention_prediction::lines lines, positionVars &result) {
     double a1 = lines.line[0].a;
     double b1 = lines.line[0].b;
     double c1 = lines.line[0].c;
@@ -43,8 +43,8 @@ void vectorFieldMap::intersectLines(human_walking_detection::lines lines, positi
     }
 }
 
-void vectorFieldMap::initializeTubeStraight(human_walking_detection::singleTube &tube) {
-human_walking_detection::lines lines; 
+void vectorFieldMap::initializeTubeStraight(human_intention_prediction::singleTube &tube) {
+human_intention_prediction::lines lines; 
 lines.line = tube.lines;
 double norm1 = sqrt(pow(lines.line[0].a,2.0) + pow(lines.line[0].b,2.0));
 double norm2 = sqrt(pow(lines.line[1].a,2.0) + pow(lines.line[1].b,2.0));
@@ -52,7 +52,7 @@ double signA1 = sign(lines.line[0].a);
 double signB1 = sign(lines.line[0].b);
 double normVec1 = signA1*(fabs(lines.line[0].a/norm1)+fabs(lines.line[1].a/norm2))/2.0;
 double normVec2 = signB1*(fabs(lines.line[0].b/norm1)+fabs(lines.line[1].b/norm2))/2.0;
-human_walking_detection::transform transform;
+human_intention_prediction::transform transform;
 transform.theta = atan2(normVec2,normVec1);
 transform.x = lines.line[0].x[0];
 transform.y = lines.line[0].y[0];
@@ -150,8 +150,8 @@ tube.lines = lines.line;
 }
 }
 
-void vectorFieldMap::initializeTubeCurved(human_walking_detection::singleTube &tube) {
-human_walking_detection::lines lines; 
+void vectorFieldMap::initializeTubeCurved(human_intention_prediction::singleTube &tube) {
+human_intention_prediction::lines lines; 
 lines.line = tube.lines;
 // determine tube basic elements
 for (int i=0;i<2;i++) {
@@ -245,7 +245,7 @@ tube.signlr = -sign(tube.theta_tot);
 }
 }
 
-void vectorFieldMap::zVal(human_walking_detection::singleTube &tube,double x,double y,bool rel,double &z, double &p, bool &inside) {
+void vectorFieldMap::zVal(human_intention_prediction::singleTube &tube,double x,double y,bool rel,double &z, double &p, bool &inside) {
 inside = true;
 if (tube.curved) {
     double r = sqrt(pow(x-tube.x,2.0)+pow(y-tube.y,2.0));
@@ -294,8 +294,8 @@ if ((z<tube.min || z>tube.max) && !rel) {
 }
 }
 
-human_walking_detection::line vectorFieldMap::createLineTemp(double x1,double x2,double y1,double y2,double th1, double th2) {
-    human_walking_detection::line lineTemp;
+human_intention_prediction::line vectorFieldMap::createLineTemp(double x1,double x2,double y1,double y2,double th1, double th2) {
+    human_intention_prediction::line lineTemp;
     lineTemp.x.push_back(x1);
     lineTemp.x.push_back(x2);
     lineTemp.y.push_back(y1);
@@ -315,7 +315,7 @@ void vectorFieldMap::linspace(double v1, double v2, int n, vector<double> &resul
     }
 }
 
-vectorFieldMap::positionVars vectorFieldMap::Fry(human_walking_detection::singleTube tube,double I1,double I2,bool rel) {
+vectorFieldMap::positionVars vectorFieldMap::Fry(human_intention_prediction::singleTube tube,double I1,double I2,bool rel) {
 if (rel) {
     I2 = I2/tube.cTransC2-tube.cTransC1;
 }
@@ -346,9 +346,10 @@ void vectorFieldMap::clearTube(visualization_msgs::MarkerArray map) {
     map.markers.clear();
 }
 
-void vectorFieldMap::plotStandingTube(double x, double y, double radius, double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotStandingTube(double x, double y, double radius, double r, double g, double b, double a, string ns,
+                                        visualization_msgs::MarkerArray &map, string mapFrame) {
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "/semanticMap";
+    marker.header.frame_id = mapFrame;
     marker.action = visualization_msgs::Marker::ADD;
     marker.header.stamp = ros::Time();
     marker.ns = ns;
@@ -375,7 +376,7 @@ void vectorFieldMap::plotStandingTube(double x, double y, double radius, double 
     marker.points.clear();
 }
 
-void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotTube(human_intention_prediction::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map) {
     vector<double> var;
     if (tube.curved) {
         linspace(0.0,tube.theta_tot,n1,var);
@@ -399,6 +400,7 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
 
     visualization_msgs::Marker marker;
     marker.header.frame_id = "/semanticMap";
+    //marker.header.frame_id = "/map";
     marker.action = visualization_msgs::Marker::ADD;
     marker.header.stamp = ros::Time();
     marker.ns = ns;
@@ -431,9 +433,12 @@ void vectorFieldMap::plotTube(human_walking_detection::singleTube tube, int n1, 
     }
 } 
 
-void vectorFieldMap::plotLine(double x1, double x2, double y1, double y2, int i, double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotLine(  double x1, double x2, double y1, double y2, 
+                                int i, double r, double g, double b, double a, 
+                                string ns, string frame, visualization_msgs::MarkerArray &map) {
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "/semanticMap";
+    //marker.header.frame_id = "/semanticMap";
+    marker.header.frame_id = frame;
     marker.action = visualization_msgs::Marker::ADD;
     marker.header.stamp = ros::Time();
     marker.ns = ns;
@@ -462,9 +467,10 @@ void vectorFieldMap::plotLine(double x1, double x2, double y1, double y2, int i,
     marker.points.clear();
 } 
 
-void vectorFieldMap::plotAOI(human_walking_detection::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotAOI(human_intention_prediction::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map) {
     visualization_msgs::Marker marker;
     marker.header.frame_id = "/semanticMap";
+    //marker.header.frame_id = "/map";
     marker.action = visualization_msgs::Marker::ADD;
     marker.header.stamp = ros::Time();
     marker.ns = ns;
@@ -495,11 +501,11 @@ void vectorFieldMap::plotAOI(human_walking_detection::singleTube tube, int n, in
     marker.points.clear();
 } 
 
-void vectorFieldMap::linesToTube(human_walking_detection::lines &lines,human_walking_detection::tubes &tubes,double id,TBCS TBC,bool marked) {
+void vectorFieldMap::linesToTube(human_intention_prediction::lines &lines,human_intention_prediction::tubes &tubes,double id,TBCS TBC,bool marked) {
     struct positionVars result;
-    human_walking_detection::lines linesTemp;
-    human_walking_detection::singleTube tubeTemp;
-    human_walking_detection::tube tube;
+    human_intention_prediction::lines linesTemp;
+    human_intention_prediction::singleTube tubeTemp;
+    human_intention_prediction::tube tube;
 for (int element = 0;element<lines.line.size()-1;element++) {
     linesTemp.line.push_back(lines.line[element]);
     linesTemp.line.push_back(lines.line[element+1]);
@@ -578,7 +584,7 @@ void vectorFieldMap::FuvCurved(double dphidr,double dphidtheta,double theta,doub
     v=v/l;
 }
 
-void vectorFieldMap::FuvStraight(double dphidx,double dphidy,human_walking_detection::singleTube tube,double &u, double &v) {
+void vectorFieldMap::FuvStraight(double dphidx,double dphidy,human_intention_prediction::singleTube tube,double &u, double &v) {
     double uT = -dphidy;
     double vT = dphidx;
     u = cos(tube.transform.theta)*uT - sin(tube.transform.theta)*vT;
@@ -588,7 +594,7 @@ void vectorFieldMap::FuvStraight(double dphidx,double dphidy,human_walking_detec
     v=v/l;
 }
 
-void vectorFieldMap::derivativeF(human_walking_detection::singleTube tube, double x, double y, double &dphidx, double &dphidy) {
+void vectorFieldMap::derivativeF(human_intention_prediction::singleTube tube, double x, double y, double &dphidx, double &dphidy) {
 double c_1,c_2,c_3,c_4,c_11,c_12,c_13,c_21,c_22,c_23;
 c_1 = tube.C[0];
 c_2 = tube.C[1];
@@ -604,7 +610,7 @@ dphidx = ((3.0 *c_21 *pow(x,2.0) + 2.0 *c_22 *x + c_23) *(c_4 *y + c_2) + c_3 *(
 dphidy = -1.0/(c_3 *x *(c_11 *pow(x,2.0) + c_12 *x + c_13) + c_4 *x *(c_21 *pow(x,2.0) + c_22 *x + c_23) + 1.0);
 }
 
-void vectorFieldMap::calcGradient(human_walking_detection::singleTube tube,double x, double y, double &u, double &v) {
+void vectorFieldMap::calcGradient(human_intention_prediction::singleTube tube,double x, double y, double &u, double &v) {
     double z,p,dphidtheta,dphidr,dphidx,dphidy;
     bool inside;
     zVal(tube,x,y,false,z,p,inside);
@@ -629,7 +635,7 @@ void vectorFieldMap::calcGradient(human_walking_detection::singleTube tube,doubl
     }
 }
 
-void vectorFieldMap::findPointInTube(human_walking_detection::tubes tubes, double x, double y, vector<int> &index) {
+void vectorFieldMap::findPointInTube(human_intention_prediction::tubes tubes, double x, double y, vector<int> &index) {
 double z,p;
 bool inside;
 index.clear();
@@ -641,7 +647,7 @@ for (int ind = 0;ind<tubes.tube.size();ind++) {
 }
 }
 
-void vectorFieldMap::validatePointInSubTube(human_walking_detection::tube tube, double x, double y, double vx, double vy,vector<double> &prop) {
+void vectorFieldMap::validatePointInSubTube(human_intention_prediction::tube tube, double x, double y, double vx, double vy,vector<double> &prop) {
 double z,p,pTot;
 bool inside;
 double xTemp, yTemp, Dneg, Dpos,C, u, v, likelihood;
@@ -770,7 +776,7 @@ for (int ind = 0;ind<tube.subTubes2.size();ind++) {
 }
 }
 
-void vectorFieldMap::createGraph(human_walking_detection::tubes tube, graph &G) {
+void vectorFieldMap::createGraph(human_intention_prediction::tubes tube, graph &G) {
     double step = 1.0/1000.0;
     vector<vector<double>> A;
     vector<double> row;
@@ -837,7 +843,7 @@ void vectorFieldMap::createGraph(human_walking_detection::tubes tube, graph &G) 
     G.marked = AMarked;
 }
 
-void vectorFieldMap::createGraphShort(human_walking_detection::tubes tube, graph &G) {
+void vectorFieldMap::createGraphShort(human_intention_prediction::tubes tube, graph &G) {
 vector<bool> visited;
 struct positionVars O;
 for (int i=0;i<G.A.size();i++) {
@@ -924,7 +930,7 @@ for (int i = 0;i<ALink.size();i++) {
 }
 }
 
-bool vectorFieldMap::considerHuman(human_walking_detection::human person,human_walking_detection::robot robot) {
+bool vectorFieldMap::considerHuman(human_intention_prediction::human person,human_intention_prediction::robot robot) {
     double dRP = dist(person.x,person.y,robot.x,robot.y);
     bool consider = true;
     if (dRP>5.0) {
@@ -952,7 +958,7 @@ bool vectorFieldMap::inAvailableTube(vector<bool> openTubes,graph G,int toTube) 
     return considered;
 }
 
-void vectorFieldMap::distEnd(double x,double y,vector<recursiveWalkStore> &store,vector<recursiveWalk> prev,vector<recursiveWalk> &next,human_walking_detection::tubes tube,graph G,vector<bool> openTubes,double dMax) {
+void vectorFieldMap::distEnd(double x,double y,vector<recursiveWalkStore> &store,vector<recursiveWalk> prev,vector<recursiveWalk> &next,human_intention_prediction::tubes tube,graph G,vector<bool> openTubes,double dMax) {
     // next = [];
     vector<int> indexTemp;
     vector<int> index;
@@ -1092,7 +1098,7 @@ void vectorFieldMap::distEnd(double x,double y,vector<recursiveWalkStore> &store
     }
 }
 
-void vectorFieldMap::recursiveWalkA(vector<recursiveWalkStore> &store,vector<recursiveWalk> next,human_walking_detection::tubes tube,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax) {
+void vectorFieldMap::recursiveWalkA(vector<recursiveWalkStore> &store,vector<recursiveWalk> next,human_intention_prediction::tubes tube,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax) {
     if (seenTubes.size()>0) {
         for (int i = 0; i<next.size();i++) {
             seenTubes[G.ALink[next[i].toTube]] = true;
@@ -1106,7 +1112,7 @@ void vectorFieldMap::recursiveWalkA(vector<recursiveWalkStore> &store,vector<rec
     }
 }
 
-void vectorFieldMap::createDynamicAsOI(human_walking_detection::tubes tube,double xPR, double yPR,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax,vector<recursiveWalkStore> &store) {
+void vectorFieldMap::createDynamicAsOI(human_intention_prediction::tubes tube,double xPR, double yPR,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax,vector<recursiveWalkStore> &store) {
 vector<struct recursiveWalk> next,prev;
 distEnd(xPR,yPR,store,prev,next,tube,G,openTubes,dMax);
 if (seenTubes.size()>0) {
@@ -1152,7 +1158,7 @@ while (!finished && seenTubes.size()==0) {
 
 }
 
-void vectorFieldMap::borderTransform(human_walking_detection::tubes &tube) {
+void vectorFieldMap::borderTransform(human_intention_prediction::tubes &tube) {
 double p, u, v;
 vectorFieldMap::positionVars O, OMax, OMin, O1, O2, O_old;
 
@@ -1269,7 +1275,7 @@ for (int i = 0; i<tube.tube.size(); i++) {
 
 }
 
-void vectorFieldMap::walkConstant(human_walking_detection::singleTube tube,double ds,double &x,double &y, double &C, double &p, double &D) {
+void vectorFieldMap::walkConstant(human_intention_prediction::singleTube tube,double ds,double &x,double &y, double &C, double &p, double &D) {
     D = 0.0;
     double step = 0.01;
     bool inside;
@@ -1301,7 +1307,7 @@ void vectorFieldMap::walkConstant(human_walking_detection::singleTube tube,doubl
     }
 }
 
-void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy, vector<human_walking_detection::tubes> tubesH) {
+void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy, vector<human_intention_prediction::tubes> tubesH) {
     double u, v, likelihood, lTot;
     bool inside;
     vector<double> pTemp;
@@ -1311,7 +1317,7 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
     bool DUMMYBOOL;
     double xTemp, yTemp, C, Dpos, Dneg, p;
     vector<double> propSub;
-    human_walking_detection::hypothesis hypothesisTemp;
+    human_intention_prediction::hypothesis hypothesisTemp;
     lTot = 0.3;//lTot + 0.5;
 
     double vAbs = sqrt(pow(vx,2.0)+pow(vy,2.0));
@@ -1377,8 +1383,8 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
     }
 }
 
-void vectorFieldMap::createTubeHypothesis(human_walking_detection::tubes tube,vector<recursiveWalkStore> store,graph G,human_walking_detection::robot robot, vector<human_walking_detection::tubes> &tubesH) {
-human_walking_detection::tubes tubeTemp;
+void vectorFieldMap::createTubeHypothesis(human_intention_prediction::tubes tube,vector<recursiveWalkStore> store,graph G,human_intention_prediction::robot robot, vector<human_intention_prediction::tubes> &tubesH) {
+human_intention_prediction::tubes tubeTemp;
 for (int i = 0; i<store.size(); i++) {
     for (int j = 0; j<store[i].path.size()-1; j++) {
         tubeTemp.tube.push_back(tube.tube[store[i].path[j]]);
@@ -1393,18 +1399,23 @@ for (int i = 0; i<store.size(); i++) {
 }
 }
 
-void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, double xRobot, double yRobot, double thetaRobot) {
+void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, double xRobot, double yRobot, double thetaRobot, string robotFrame, string mapFrame) {
     robot.x = xRobot;
     robot.y = yRobot;
     robot.theta = thetaRobot;
     human.x = x;
     human.y = y;
+
+    std::cout  <<" Update hypotheses: xRobot = " << xRobot << " yRobot = " << yRobot << " thetaRobot = " << thetaRobot 
+    << " humanX = " << x << " humanY = " << y << std::endl;
+
     dynamicMap.markers.clear();
     bool consider = considerHuman(human,robot);
-    plotRobot(robot);
-    vector<human_walking_detection::tubes> tubesH;
+    plotRobot(robot, robotFrame);
+    vector<human_intention_prediction::tubes> tubesH;
 
-    if (consider) {
+    if (consider) 
+    {
         vector<bool> seenTubes;
         for (int i=0;i<G.AShort.size();i++) {
             seenTubes.push_back(false);
@@ -1412,16 +1423,16 @@ void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, 
 
         vector<recursiveWalkStore> store;
         vector<bool> openTubes;
-        human_walking_detection::hypothesis hypothesisTemp;
-        human_walking_detection::hypotheses hypothesesNew;
-        human_walking_detection::hypotheses hypothesesOld;
+        human_intention_prediction::hypothesis hypothesisTemp;
+        human_intention_prediction::hypotheses hypothesesNew;
+        human_intention_prediction::hypotheses hypothesesOld;
 
 
         createDynamicAsOI(globalTube,robot.x,robot.y,G,seenTubes,openTubes,robot.dMax,store);
         openTubes.clear();
         store.clear();
         createDynamicAsOI(globalTube,x,y,G,openTubes,seenTubes,human.dMax,store);
-        vector<human_walking_detection::tubes> tubesHOld;
+        vector<human_intention_prediction::tubes> tubesHOld;
         bool skip,same;
         vector<int> removeElements;
         tubesHOld.clear();
@@ -1477,44 +1488,46 @@ void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, 
             pTotPlot=pTotPlot + hypotheses.hypotheses[i].pAOI;
         }
         pTotPlot=pTotPlot+hypotheses.hypotheses[hypotheses.hypotheses.size()-1].p;
-        plotLine(-0.4,-0.4,6.0,6.5-(6.5-2.5)*(1-pTotPlot),dynamicMap.markers.size(),0.5,0,0.5,0.6,"dyamicMapNOTA",dynamicMap); 
+        plotLine(-0.4,-0.4,6.0,6.5-(6.5-2.5)*(1-pTotPlot),dynamicMap.markers.size(),0.5,0,0.5,0.6,"dynamicMapNOTA", "/semanticMap",dynamicMap); 
         // cout<<"debug4: "<<hypotheses.hypotheses.size()<<", "<<tubesH.size()<<endl;
         globalTubesH.tubeH.clear();
         for (int i = 0; i<tubesH.size();i++) {
             globalTubesH.tubeH.push_back(tubesH[i]);
         }
 
-    for (int i = 0; i<tubesH.size(); i++) {
-            for (int j = 0; j<tubesH[i].tube.size();j++) {
-                // if (hypotheses.hypotheses[i].index==15) {
-                plotTube(tubesH[i].tube[j].main,20,2,dynamicMap.markers.size(),0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*1.0+0.00,"dyamicMap",dynamicMap);
-                for (int z = 0; z<tubesH[i].tube[j].subTubes0.size();z++) {
-                    plotTube(tubesH[i].tube[j].subTubes0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dyamicMap0",dynamicMap);
+        for (int i = 0; i<tubesH.size(); i++) {
+                for (int j = 0; j<tubesH[i].tube.size();j++) {
+                    // if (hypotheses.hypotheses[i].index==15) {
+                    plotTube(tubesH[i].tube[j].main,20,2,dynamicMap.markers.size(),0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*1.0+0.00,"dynamicMap",dynamicMap);
+                    for (int z = 0; z<tubesH[i].tube[j].subTubes0.size();z++) {
+                        plotTube(tubesH[i].tube[j].subTubes0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMap0",dynamicMap);
+                    }
+                    for (int z = 0; z<tubesH[i].tube[j].subTubes1.size();z++) {
+                        plotTube(tubesH[i].tube[j].subTubes1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMap1",dynamicMap);
+                    }
+                    for (int z = 0; z<tubesH[i].tube[j].subTubes2.size();z++) {
+                        plotTube(tubesH[i].tube[j].subTubes2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMap2",dynamicMap);
+                    }
+                    for (int z = 0; z<tubesH[i].tube[j].subTubesB0.size();z++) {
+                        plotTube(tubesH[i].tube[j].subTubesB0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMapB0",dynamicMap);
+                    }
+                    for (int z = 0; z<tubesH[i].tube[j].subTubesB1.size();z++) {
+                        plotTube(tubesH[i].tube[j].subTubesB1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMapB1",dynamicMap);
+                    }
+                    for (int z = 0; z<tubesH[i].tube[j].subTubesB2.size();z++) {
+                        plotTube(tubesH[i].tube[j].subTubesB2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMapB2",dynamicMap);
+                    }
+                    // }
                 }
-                for (int z = 0; z<tubesH[i].tube[j].subTubes1.size();z++) {
-                    plotTube(tubesH[i].tube[j].subTubes1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dyamicMap1",dynamicMap);
-                }
-                for (int z = 0; z<tubesH[i].tube[j].subTubes2.size();z++) {
-                    plotTube(tubesH[i].tube[j].subTubes2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dyamicMap2",dynamicMap);
-                }
-                for (int z = 0; z<tubesH[i].tube[j].subTubesB0.size();z++) {
-                    plotTube(tubesH[i].tube[j].subTubesB0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dyamicMapB0",dynamicMap);
-                }
-                for (int z = 0; z<tubesH[i].tube[j].subTubesB1.size();z++) {
-                    plotTube(tubesH[i].tube[j].subTubesB1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dyamicMapB1",dynamicMap);
-                }
-                for (int z = 0; z<tubesH[i].tube[j].subTubesB2.size();z++) {
-                    plotTube(tubesH[i].tube[j].subTubesB2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dyamicMapB2",dynamicMap);
-                }
-                // }
-            }
-    }
-    plotStandingTube(x, y, 0.5, 0.0, 1.0, 0.0, hypotheses.hypotheses[hypotheses.hypotheses.size()-1].p*1.0 + 0.00, "AoIMap", dynamicMap);
+        }
+    
+    plotStandingTube(x, y, 0.5, 0.0, 1.0, 0.0, hypotheses.hypotheses[hypotheses.hypotheses.size()-1].p*1.0 + 0.00, "AoIMap", dynamicMap, mapFrame);
+
     }
 
 }
 
-int vectorFieldMap::findPGlobalInTube(human_walking_detection::tubes tube, double p) {
+int vectorFieldMap::findPGlobalInTube(human_intention_prediction::tubes tube, double p) {
     int index = -1;
     for (int i = 0; i<tube.tube.size(); i++) {
         if (tube.tube[i].main.pTot*tube.tube[i].main.pM>0.0) {
@@ -1530,7 +1543,7 @@ int vectorFieldMap::findPGlobalInTube(human_walking_detection::tubes tube, doubl
     return index;
 }
 
-void vectorFieldMap::walkToBorder(double &x,double &y,double dMax,human_walking_detection::tubes tube,bool &endReached, double &dist, bool &border) {
+void vectorFieldMap::walkToBorder(double &x,double &y,double dMax,human_intention_prediction::tubes tube,bool &endReached, double &dist, bool &border) {
     border=false;
     double scale;
 
@@ -1541,7 +1554,7 @@ void vectorFieldMap::walkToBorder(double &x,double &y,double dMax,human_walking_
     }
     vector<int> iS;
     findPointInTube(tube,x,y,iS);
-    human_walking_detection::singleTube tubeE;
+    human_intention_prediction::singleTube tubeE;
     vectorFieldMap::positionVars O;
     double z, pS, p;
     bool inside;
@@ -1625,7 +1638,7 @@ void vectorFieldMap::maxVal(vector<double> prTemp, double &maxVal, int &maxInd) 
     }
 }
 
-double vectorFieldMap::angleBetweenVectors(human_walking_detection::line lineTemp,double v1[2]) {
+double vectorFieldMap::angleBetweenVectors(human_intention_prediction::line lineTemp,double v1[2]) {
     double v2a[2], v2b[2];
     double theta;
     v2a[0] = -lineTemp.y[1]+lineTemp.y[0];
@@ -1640,7 +1653,7 @@ double vectorFieldMap::angleBetweenVectors(human_walking_detection::line lineTem
     return theta;
 }
 
-double vectorFieldMap::relativeGradientV2(human_walking_detection::line lineTemp,human_walking_detection::singleTube tube,int i) {
+double vectorFieldMap::relativeGradientV2(human_intention_prediction::line lineTemp,human_intention_prediction::singleTube tube,int i) {
     i = i-1;
     vectorFieldMap::positionVars O;
     double DUMMYDOUBLE;
@@ -1677,9 +1690,9 @@ double vectorFieldMap::relativeGradientV2(human_walking_detection::line lineTemp
     return angleBetweenVectors(lineTemp,v1);
 }
 
-void vectorFieldMap::addBorderElement(double zFixed,double zBorder,human_walking_detection::tubes tube,double p,double dfStart,human_walking_detection::lines linesB,double index,positionVars O,double theta_2) {
+void vectorFieldMap::addBorderElement(double zFixed,double zBorder,human_intention_prediction::tubes tube,double p,double dfStart,human_intention_prediction::lines linesB,double index,positionVars O,double theta_2) {
     struct positionVars OB;
-    human_walking_detection::line lineTemp;
+    human_intention_prediction::line lineTemp;
     if (fabs(zFixed-zBorder)>0.01) {
         OB = Fry(tube.tube[index].main,p,zBorder,1);
         lineTemp = createLineTemp(OB.x,O.x,OB.y,O.y,0.0,0.0);
@@ -1693,7 +1706,7 @@ void vectorFieldMap::addBorderElement(double zFixed,double zBorder,human_walking
     }
 }
 
-void vectorFieldMap::splitFrontBack(double &xLoop,double &yLoop,double &df,human_walking_detection::tubes tube,bool &endReached,human_walking_detection::lines &lines,human_walking_detection::lines &linesB,double &dTot,double zVar,vector<double> CfT1,vector<double> CfT2,double zFixed,double zBorder,double dfStart) {
+void vectorFieldMap::splitFrontBack(double &xLoop,double &yLoop,double &df,human_intention_prediction::tubes tube,bool &endReached,human_intention_prediction::lines &lines,human_intention_prediction::lines &linesB,double &dTot,double zVar,vector<double> CfT1,vector<double> CfT2,double zFixed,double zBorder,double dfStart) {
     double DUMMYDOUBLE;
     bool DUMMYBOOL;
     vectorFieldMap::positionVars O, O_old;
@@ -1722,7 +1735,7 @@ void vectorFieldMap::splitFrontBack(double &xLoop,double &yLoop,double &df,human
     xLoop = O.x;
     yLoop = O.y;
     O = Fry(tube.tube[index].main,p,zFixed+ds2,1);
-    human_walking_detection::line lineTemp;
+    human_intention_prediction::line lineTemp;
     lineTemp = createLineTemp(xLoop,O.x,yLoop,O.y,0.0,0.0); 
     double theta_1, theta_2,dAbsolute1,dAbsolute2;   
     theta_1 = relativeGradientV2(lineTemp,tube.tube[index].main,1);
@@ -1752,7 +1765,7 @@ void vectorFieldMap::splitFrontBack(double &xLoop,double &yLoop,double &df,human
     }
 }
 
-void vectorFieldMap::newTubeSplit(human_walking_detection::tubes tube,double zFixed,double zBorder,double zVar,double zVarEnd,double pVar,double df,double v1[2],human_walking_detection::lines &lines,human_walking_detection::lines &linesB) {
+void vectorFieldMap::newTubeSplit(human_intention_prediction::tubes tube,double zFixed,double zBorder,double zVar,double zVarEnd,double pVar,double df,double v1[2],human_intention_prediction::lines &lines,human_intention_prediction::lines &linesB) {
 lines.line.clear();
 linesB.line.clear();
 double ATemp[3][3] = {{0.0, 0.0, 1.0}, {3.0*pow(fabs(df),2.0), 2.0*fabs(df), 1.0}, {pow(fabs(df),3.0), pow(fabs(df),2.0), fabs(df)}};
@@ -1788,7 +1801,7 @@ double yLoop = O.y;
 double dTot = 0.0;
 O = Fry(tube.tube[index].main,pVar,zFixed,1);
 
-human_walking_detection::line lineTemp;
+human_intention_prediction::line lineTemp;
 lineTemp = createLineTemp(xLoop,O.x,yLoop,O.y,0.0,0.0);
 double theta_2 = relativeGradientV2(lineTemp,tube.tube[index].main,2);
 lineTemp = createLineTemp(xLoop,O.x,yLoop,O.y,angleBetweenVectors(lineTemp,v1),theta_2);
@@ -1812,7 +1825,7 @@ double d = sign(dfStart)*1000.0;
 splitFrontBack(xLoop,yLoop,d,tube,endReached,lines,linesB,dTot,zVarEnd,CfT1,CfT2,zFixed,zBorder,dfStart);
 }
 
-void vectorFieldMap::walkStraight(double x1,double y1,double x2,double y2,human_walking_detection::tubes tube,vector<int> tube_indices, vector<double> x_ind, vector<double> y_ind) {
+void vectorFieldMap::walkStraight(double x1,double y1,double x2,double y2,human_intention_prediction::tubes tube,vector<int> tube_indices, vector<double> x_ind, vector<double> y_ind) {
     tube_indices.clear();
     x_ind.clear();
     y_ind.clear();
@@ -1845,7 +1858,7 @@ void vectorFieldMap::walkStraight(double x1,double y1,double x2,double y2,human_
     }
 }
 
-void vectorFieldMap::newTubeSplitMiddle(human_walking_detection::tubes tube,double zFixed,double x[4],double y[4],int ind1,int ind2,double v1[2],double zBorder,human_walking_detection::lines &lines,human_walking_detection::lines &linesB) {
+void vectorFieldMap::newTubeSplitMiddle(human_intention_prediction::tubes tube,double zFixed,double x[4],double y[4],int ind1,int ind2,double v1[2],double zBorder,human_intention_prediction::lines &lines,human_intention_prediction::lines &linesB) {
     lines.line.clear();
     linesB.line.clear();
     bool DUMMYBOOL;
@@ -1853,7 +1866,7 @@ void vectorFieldMap::newTubeSplitMiddle(human_walking_detection::tubes tube,doub
     vector<double> x_indTemp,y_indTemp;
     double zTemp, pTemp, theta_1, theta_2;
     struct positionVars O; 
-    human_walking_detection::line lineTemp;
+    human_intention_prediction::line lineTemp;
     walkStraight(x[ind1],y[ind1],x[ind2],y[ind2],tube,tube_indicesTemp, x_indTemp, y_indTemp);
     for (int i = tube_indicesTemp.size()-1;i>-1;i = i - 1) { 
         zVal(tube.tube[tube_indicesTemp[i]].main,x_indTemp[i],y_indTemp[i],1,zTemp,pTemp,DUMMYBOOL);
@@ -1871,7 +1884,7 @@ void vectorFieldMap::newTubeSplitMiddle(human_walking_detection::tubes tube,doub
     }
 }
 
-void vectorFieldMap::addObject(human_walking_detection::tubes &tube,human_walking_detection::robot object, int TBCi) {
+void vectorFieldMap::addObject(human_intention_prediction::tubes &tube,human_intention_prediction::robot object, int TBCi) {
 struct TBCS TBC;
 double DUMMYDOUBLE,DUMMYDOUBLE2;
 bool DUMMYBOOL;
@@ -2041,8 +2054,8 @@ if (count>0) {
     }
 
     // create subtube elements
-    human_walking_detection::lines lines;
-    human_walking_detection::lines linesB;
+    human_intention_prediction::lines lines;
+    human_intention_prediction::lines linesB;
 
     double zVarEnd, zBorder, zFixed;
     int ind1, ind2;
@@ -2095,8 +2108,8 @@ if (count>0) {
             
             dista = dist(O2.x, O2.y, O1.x, O1.y);            
 
-            // human_walking_detection::line linesTemp, linesTempB;
-            human_walking_detection::lines linesTemp, linesTempB;
+            // human_intention_prediction::line linesTemp, linesTempB;
+            human_intention_prediction::lines linesTemp, linesTempB;
 
             newTubeSplit(tube,zFixed,zBorder,zVar1,zVarEnd,pVar1,-dista*object.df,v1,linesTemp,linesTempB);
 
@@ -2167,7 +2180,7 @@ if (count>0) {
             dista = dist(O.x, O.y, xBorderB, yBorderB);
             double distTube = dist(x[frontT], y[frontT], x[backT], y[backT]);
             
-            human_walking_detection::lines linesTemp, linesTempDummy;
+            human_intention_prediction::lines linesTemp, linesTempDummy;
 
             newTubeSplit(tube,zBorderB,-1.0,zMat[backB],0,pr[backB],-dista*object.df-distTube,v1,linesTemp,linesTempDummy); 
 
@@ -2196,7 +2209,7 @@ if (count>0) {
 }
 }
 
-void vectorFieldMap::plotRobot(human_walking_detection::robot object) {
+void vectorFieldMap::plotRobot(human_intention_prediction::robot object, string robotFrame) {
     double theta, l, b, ct, st;
     theta = object.theta;
     l = object.l;
@@ -2215,18 +2228,19 @@ void vectorFieldMap::plotRobot(human_walking_detection::robot object) {
     y[2] =  l/2.0*st+b/2.0*ct+object.y;
     y[3] =  l/2.0*st-b/2.0*ct+object.y;
 
-    plotLine(x[0], x[1], y[0], y[1],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot",dynamicMap);
-    plotLine(x[1], x[2], y[1], y[2],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot",dynamicMap);
-    plotLine(x[2], x[3], y[2], y[3],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot",dynamicMap);
-    plotLine(x[3], x[0], y[3], y[0],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot",dynamicMap);
+//    string frame = robotFrame;
+    plotLine(x[0], x[1], y[0], y[1],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
+    plotLine(x[1], x[2], y[1], y[2],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
+    plotLine(x[2], x[3], y[2], y[3],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
+    plotLine(x[3], x[0], y[3], y[0],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
 
 }
 
 void vectorFieldMap::initializeMap() {
     cout<<"initialize map..."<< endl;
     TBCS TBC;
-    human_walking_detection::lines lines;
-    human_walking_detection::line lineTemp;
+    human_intention_prediction::lines lines;
+    human_intention_prediction::line lineTemp;
 
     robot.x = 6.5;
     robot.y = 8.5;

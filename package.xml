@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package>
-  <name>human_walking_detection</name>
+  <name>human_intention_prediction</name>
   <version>0.1.0</version>
-  <description>Detector for human's walking intetion</description>
+  <description>Map based hypotheses reasoning and validation about human intentions</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <maintainer email="g.bijlenga@student.tue.nl">Gosse</maintainer>
+  <maintainer email="w.houtman@tue.nl">whoutman</maintainer>
   <license>BSD</license>
- 
  
   <buildtool_depend>catkin</buildtool_depend>  
   <build_depend>message_generation</build_depend>
@@ -19,7 +19,6 @@
   <build_depend>armadillo_matrix</build_depend>
   <!-- <build_depend>turtlesim</build_depend> -->
   
-
   <run_depend>message_runtime</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -28,7 +27,6 @@
   <run_depend>tf</run_depend>
   <run_depend>armadillo_matrix</run_depend>
 
- 
   <buildtool_depend>catkin</buildtool_depend>
 
 </package>

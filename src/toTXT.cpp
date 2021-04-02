@@ -4,23 +4,23 @@
 #include "geometry_msgs/Pose.h"
 #include "tf/transform_listener.h"
 
-#include <human_walking_detection/Pose.h>
-#include <human_walking_detection/PoseVel.h>
+#include <human_intention_prediction/Pose.h>
+#include <human_intention_prediction/PoseVel.h>
 #include <ed_gui_server/objsPosVel.h>
 #include <functionsDiscretizedMap.h>
-#include <human_walking_detection/hypothesis.h>
-#include <human_walking_detection/hypotheses.h>
+#include <human_intention_prediction/hypothesis.h>
+#include <human_intention_prediction/hypotheses.h>
 #include <camera_detector/detections.h>
 
 using namespace std;
 
-human_walking_detection::hypotheses hypothesesList;
-human_walking_detection::PoseVel humanPosVel;
+human_intention_prediction::hypotheses hypothesesList;
+human_intention_prediction::PoseVel humanPosVel;
 
-void update(const human_walking_detection::hypotheses& hypo) {
+void update(const human_intention_prediction::hypotheses& hypo) {
     hypothesesList = hypo;
 } 
-void state(const human_walking_detection::PoseVel& humanPosVelTemp) {
+void state(const human_intention_prediction::PoseVel& humanPosVelTemp) {
     humanPosVel = humanPosVelTemp;
 }
 
@@ -29,11 +29,11 @@ int main(int argc, char** argv)
 /// [main]
 {
 
-    ros::init(argc, argv, "HWD");
+    ros::init(argc, argv, "HIP");
     ros::NodeHandle n;
     ros::Subscriber hypotheses,human;
-    hypotheses = n.subscribe("/HWD/hypotheses",1000, update);
-    human = n.subscribe("/HWD/trackedHuman",1000, state);
+    hypotheses = n.subscribe("/HIP/hypotheses",1000, update);
+    human = n.subscribe("/HIP/trackedHuman",1000, state);
     std::ofstream file,fileR,fileL,fileC;
     ros::Time stamp;
     double time;

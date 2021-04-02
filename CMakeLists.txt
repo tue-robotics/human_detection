@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(human_walking_detection)
+project(human_intention_prediction)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -53,11 +53,10 @@ include_directories(
    ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(human_walking_detection src/rosnode.cpp src/main.cpp src/functions.cpp src/functionsDisretizedMap.cpp)
-target_link_libraries(human_walking_detection -O2 blas lapack ${catkin_LIBRARIES})
-add_dependencies(human_walking_detection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(human_intention_prediction src/rosnode.cpp src/main.cpp src/functions.cpp src/functionsDisretizedMap.cpp)
+target_link_libraries(human_intention_prediction -O2 blas lapack ${catkin_LIBRARIES})
+add_dependencies(human_intention_prediction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(human_walking_detection_process src/toTXT.cpp)
-target_link_libraries(human_walking_detection_process ${catkin_LIBRARIES})
-add_dependencies(human_walking_detection_process ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
+add_executable(human_intention_prediction_process src/toTXT.cpp)
+target_link_libraries(human_intention_prediction_process ${catkin_LIBRARIES})
+add_dependencies(human_intention_prediction_process ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
