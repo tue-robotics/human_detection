@@ -8,10 +8,10 @@ void rosNode::initialize() {
     virtualRobot = n.advertise<visualization_msgs::Marker>("/HIP/virtualRobot",3);
     humanState = n.advertise<visualization_msgs::Marker>("/HIP/humanState",3);
     humanSpeed = n.advertise<visualization_msgs::Marker>("/HIP/humanSpeed",3);
-    humanPV = n.advertise<human_intention_prediction::PoseVel>("/HIP/trackedHuman",3);
-    tubeTop = n.advertise<human_intention_prediction::tubes>("/HIP/tubes",3);
-    tubeHTop = n.advertise<human_intention_prediction::tubesH>("/HIP/tubesH",3);
-    hypothesesTop = n.advertise<human_intention_prediction::hypotheses>("/HIP/hypotheses",3);
+    humanPV = n.advertise<hip_msgs::PoseVel>("/HIP/trackedHuman",3);
+    tubeTop = n.advertise<hip_msgs::tubes>("/HIP/tubes",3);
+    tubeHTop = n.advertise<hip_msgs::tubesH>("/HIP/tubesH",3);
+    hypothesesTop = n.advertise<hip_msgs::hypotheses>("/HIP/hypotheses",3);
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
 
     n.getParam("/human_intention_prediction/a",iMax);
@@ -76,12 +76,12 @@ void rosNode::createLine(   int i,                                  // ID
     marker.color.b = b;
 }
 
-void rosNode::updateFakeMeasurement(const human_intention_prediction::Pose& poseHuman) {
+void rosNode::updateFakeMeasurement(const hip_msgs::Pose& poseHuman) {
     measurement[0] = poseHuman.x;
     measurement[1] = poseHuman.y;
 }
 
-void rosNode::updateRealMeasurement(const camera_detector::detections& poseHuman) {
+void rosNode::updateRealMeasurement(const hip_msgs::detections& poseHuman) {
     if (poseHuman.detections.size()>0) {
 
         double xRobot = robotPose.pose.pose.position.x;
@@ -173,12 +173,12 @@ void rosNode::removeDynamicMap() {
     dynamic_map.publish (deleteAllMarkerArray);
 }
 
-void rosNode::publishTube(human_intention_prediction::tubes tube, human_intention_prediction::tubesH tubesH) {
+void rosNode::publishTube(hip_msgs::tubes tube, hip_msgs::tubesH tubesH) {
     tubeTop.publish(tube);
     tubeHTop.publish(tubesH);
 }
 
-void rosNode::publishHypotheses(human_intention_prediction::hypotheses hypotheses) {
+void rosNode::publishHypotheses(hip_msgs::hypotheses hypotheses) {
     hypothesesTop.publish(hypotheses);
 }
 

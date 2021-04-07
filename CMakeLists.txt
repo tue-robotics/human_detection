@@ -10,30 +10,31 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf
   armadillo_matrix
+  hip_msgs
   #turtlesim
 )
 
 
 
 # Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-    wall.msg
-    walls.msg
-    Pose.msg
-    PoseVel.msg
-    transform.msg
-    singleTube.msg
-    tube.msg
-    tubes.msg
-    tubesH.msg
-    line.msg
-    lines.msg
-    human.msg
-    robot.msg
-    hypothesis.msg
-    hypotheses.msg
-)
+#add_message_files(
+#  FILES
+#    wall.msg
+#    walls.msg
+#    Pose.msg
+#    PoseVel.msg
+#    transform.msg
+#    singleTube.msg
+#    tube.msg
+#    tubes.msg
+#    tubesH.msg
+#    line.msg
+#    lines.msg
+#    human.msg
+#    robot.msg
+#    hypothesis.msg
+#    hypotheses.msg
+#)
 
 generate_messages(
   DEPENDENCIES
@@ -42,7 +43,7 @@ generate_messages(
 
 catkin_package(
     INCLUDE_DIRS include
-    CATKIN_DEPENDS message_runtime std_msgs geometry_msgs nav_msgs roscpp tf armadillo_matrix
+    CATKIN_DEPENDS message_runtime std_msgs geometry_msgs nav_msgs roscpp tf armadillo_matrix hip_msgs
 )
 
 ###########

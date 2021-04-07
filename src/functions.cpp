@@ -151,7 +151,7 @@ void initializeKalman(matrix &A,matrix &H,matrix &P,matrix &Sigma_a,matrix &R,ma
 }
 
 
-void updateKalman(matrix A,matrix H,matrix &P,matrix Sigma_a,matrix R,matrix I,human_intention_prediction::PoseVel &humanPosVel,vector<double> Z_, double dt) {
+void updateKalman(matrix A,matrix H,matrix &P,matrix Sigma_a,matrix R,matrix I,hip_msgs::PoseVel &humanPosVel,vector<double> Z_, double dt) {
 
         // double x_t[4] = {}; //input
         matrix G;

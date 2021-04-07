@@ -4,23 +4,23 @@
 #include "geometry_msgs/Pose.h"
 #include "tf/transform_listener.h"
 
-#include <human_intention_prediction/Pose.h>
-#include <human_intention_prediction/PoseVel.h>
+#include <hip_msgs/Pose.h>
+#include <hip_msgs/PoseVel.h>
 #include <ed_gui_server/objsPosVel.h>
 #include <functionsDiscretizedMap.h>
-#include <human_intention_prediction/hypothesis.h>
-#include <human_intention_prediction/hypotheses.h>
-#include <camera_detector/detections.h>
+#include <hip_msgs/hypothesis.h>
+#include <hip_msgs/hypotheses.h>
+#include <hip_msgs/detections.h>
 
 using namespace std;
 
-human_intention_prediction::hypotheses hypothesesList;
-human_intention_prediction::PoseVel humanPosVel;
+hip_msgs::hypotheses hypothesesList;
+hip_msgs::PoseVel humanPosVel;
 
-void update(const human_intention_prediction::hypotheses& hypo) {
+void update(const hip_msgs::hypotheses& hypo) {
     hypothesesList = hypo;
 } 
-void state(const human_intention_prediction::PoseVel& humanPosVelTemp) {
+void state(const hip_msgs::PoseVel& humanPosVelTemp) {
     humanPosVel = humanPosVelTemp;
 }
 

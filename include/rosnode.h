@@ -1,8 +1,8 @@
 #ifndef HIP_ROSNODE_H_
 #define HIP_ROSNODE_H_
 
-#include <human_intention_prediction/Pose.h>
-#include <human_intention_prediction/PoseVel.h>
+#include <hip_msgs/Pose.h>
+#include <hip_msgs/PoseVel.h>
 
 #include <ros/ros.h>
 
@@ -20,18 +20,18 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 
-#include <camera_detector/detection.h>
-#include <camera_detector/detections.h>
+#include <hip_msgs/detection.h>
+#include <hip_msgs/detections.h>
 
 // ROS-msgs
-#include <human_intention_prediction/line.h>
-#include <human_intention_prediction/lines.h>
-#include <human_intention_prediction/tube.h>
-#include <human_intention_prediction/singleTube.h>
-#include <human_intention_prediction/tubes.h>
-#include <human_intention_prediction/tubesH.h>
-#include <human_intention_prediction/hypothesis.h>
-#include <human_intention_prediction/hypotheses.h>
+#include <hip_msgs/line.h>
+#include <hip_msgs/lines.h>
+#include <hip_msgs/tube.h>
+#include <hip_msgs/singleTube.h>
+#include <hip_msgs/tubes.h>
+#include <hip_msgs/tubesH.h>
+#include <hip_msgs/hypothesis.h>
+#include <hip_msgs/hypotheses.h>
 
 using namespace std;
 
@@ -69,7 +69,7 @@ class rosNode {
         std::string robotName;
         geometry_msgs::PoseWithCovarianceStamped robotPose;
 
-        human_intention_prediction::PoseVel humanPosVel;
+        hip_msgs::PoseVel humanPosVel;
         visualization_msgs::Marker deleteAllMarker;
         visualization_msgs::MarkerArray deleteAllMarkerArray;
         visualization_msgs::MarkerArray markerArrayWalls;
@@ -77,7 +77,7 @@ class rosNode {
         visualization_msgs::MarkerArray markerArrayStatic;
         visualization_msgs::MarkerArray markerArrayDynamic;
         visualization_msgs::Marker markerA;
-        human_intention_prediction::tubes globalTube;
+        hip_msgs::tubes globalTube;
 
         int a=4;
 
@@ -104,9 +104,9 @@ class rosNode {
 
         void initialize();
 
-        void updateFakeMeasurement(const human_intention_prediction::Pose& poseHuman);
+        void updateFakeMeasurement(const hip_msgs::Pose& poseHuman);
 
-        void updateRealMeasurement(const camera_detector::detections& poseHuman);
+        void updateRealMeasurement(const hip_msgs::detections& poseHuman);
 
         void updateRobotPose(const geometry_msgs::PoseWithCovarianceStamped& msg);
 
@@ -120,9 +120,9 @@ class rosNode {
 
         void setDynamicMap(visualization_msgs::MarkerArray dynamicMap);
 
-        void publishTube(human_intention_prediction::tubes tube, human_intention_prediction::tubesH);
+        void publishTube(hip_msgs::tubes tube, hip_msgs::tubesH);
 
-        void publishHypotheses(human_intention_prediction::hypotheses hypotheses);
+        void publishHypotheses(hip_msgs::hypotheses hypotheses);
 
         void visualizeRobot();
 

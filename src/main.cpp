@@ -5,15 +5,18 @@
 #include <visualization_msgs/MarkerArray.h>
 #include "tf/transform_listener.h"
 #include <tf2/LinearMath/Quaternion.h>
-#include <human_intention_prediction/walls.h>
-#include <human_intention_prediction/wall.h>
-#include <human_intention_prediction/Pose.h>
+
+#include <hip_msgs/walls.h>
+#include <hip_msgs/wall.h>
+#include <hip_msgs/Pose.h>
+#include <hip_msgs/hypothesis.h>
+#include <hip_msgs/hypotheses.h>
+
 #include <ed_gui_server/objsPosVel.h>
 #include <functions.h>
 #include <rosnode.h>
 #include <functionsDiscretizedMap.h>
-#include <human_intention_prediction/hypothesis.h>
-#include <human_intention_prediction/hypotheses.h>
+
 
 using namespace std;
 
