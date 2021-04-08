@@ -82,25 +82,47 @@ void rosNode::updateFakeMeasurement(const hip_msgs::Pose& poseHuman) {
 }
 
 void rosNode::updateRealMeasurement(const hip_msgs::detections& poseHuman) {
-    if (poseHuman.detections.size()>0) {
 
-        double xRobot = robotPose.pose.pose.position.x;
-        double yRobot = robotPose.pose.pose.position.y;
+    if (poseHuman.detections.size() > 0) {
 
-        tf2::Quaternion q ( robotPose.pose.pose.orientation.x, robotPose.pose.pose.orientation.y, 
-                            robotPose.pose.pose.orientation.z, robotPose.pose.pose.orientation.w );
-        tf2::Matrix3x3 matrix ( q );
-        double rollRobot, pitchRobot, yawRobot;
-        matrix.getRPY ( rollRobot, pitchRobot, yawRobot );
+        geometry_msgs::Point pointHumanCameraFrame, pointHumanMapFrame;
+        pointHumanCameraFrame.x = poseHuman.detections[0].x;
+        pointHumanCameraFrame.y = poseHuman.detections[0].y;
+        pointHumanCameraFrame.z = poseHuman.detections[0].z;
 
-        // here, only first detection is considered(!)
-        measurement[0] = cos(yawRobot) * (poseHuman.detections[0].x) - sin(yawRobot) * poseHuman.detections[0].y + xRobot;
-        measurement[1] = sin(yawRobot) * (poseHuman.detections[0].x) + cos(yawRobot) * poseHuman.detections[0].y + yRobot;
+        try
+        {
+            string measuredFrameID = poseHuman.header.frame_id;
+            // Check if frame-names start with a "/", as this is not allowed in order to determine the transformations
+            if (measuredFrameID.substr(0,1) == "/") 
+            {
+                measuredFrameID = measuredFrameID.substr (1,measuredFrameID.length()-1);
+            }
+
+            string updatedSemanticFrameID = semanticMapFrame;
+            if (updatedSemanticFrameID.substr(0,1) == "/") 
+            {
+                updatedSemanticFrameID = updatedSemanticFrameID.substr (1,updatedSemanticFrameID.length()-1);
+            }
+
+            geometry_msgs::TransformStamped transformStamped = tfBuffer.lookupTransform(updatedSemanticFrameID, measuredFrameID, ros::Time(0));
+            tf2::doTransform(pointHumanCameraFrame, pointHumanMapFrame, transformStamped);
+
+            // here, only first detection is considered(!)
+            measurement[0] = pointHumanMapFrame.x;
+            measurement[1] = pointHumanMapFrame.y;
+        }
+
+        catch (tf2::TransformException &ex) 
+        {
+            ROS_WARN("%s",ex.what());
+            ros::Duration(1.0).sleep();
+        }
     }
 }
 
 void rosNode::updateRobotPose(const geometry_msgs::PoseWithCovarianceStamped& msg)
-{    geometry_msgs::TransformStamped transformStamped;
+{   geometry_msgs::TransformStamped transformStamped;
     try{
         string updatedFrameID = msg.header.frame_id;
         // Check if frame-names start with a "/", as this is not allowed in order to determine the transformations
