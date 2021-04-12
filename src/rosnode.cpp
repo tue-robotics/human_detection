@@ -4,11 +4,11 @@ rosNode::rosNode(void): tfListener(tfBuffer){ };
 
 void rosNode::initialize() {
     cout<<"Starting ROS publisher..."<<endl;
-    measuredHuman = n.advertise<visualization_msgs::Marker>("/HIP/measuredHuman",3);
+    measuredHumans = n.advertise<visualization_msgs::MarkerArray>("/HIP/measuredHumans",3);
     virtualRobot = n.advertise<visualization_msgs::Marker>("/HIP/virtualRobot",3);
-    humanState = n.advertise<visualization_msgs::Marker>("/HIP/humanState",3);
-    humanSpeed = n.advertise<visualization_msgs::Marker>("/HIP/humanSpeed",3);
-    humanPV = n.advertise<hip_msgs::PoseVel>("/HIP/trackedHuman",3);
+    humansState = n.advertise<visualization_msgs::MarkerArray>("/HIP/humansState",3);
+    humansSpeed = n.advertise<visualization_msgs::MarkerArray>("/HIP/humansSpeed",3);
+    humanPV = n.advertise<hip_msgs::PoseVels>("/HIP/trackedHumans",3);
     tubeTop = n.advertise<hip_msgs::tubes>("/HIP/tubes",3);
     tubeHTop = n.advertise<hip_msgs::tubesH>("/HIP/tubesH",3);
     hypothesesTop = n.advertise<hip_msgs::hypotheses>("/HIP/hypotheses",3);
@@ -21,19 +21,13 @@ void rosNode::initialize() {
 
     subRobotPose = n.subscribe(robotName + "/amcl_pose", 1000, &rosNode::updateRobotPose, this);
     
-    if (real) {
-        subHuman = n.subscribe("/Jetson/cameraDetections", 1000, &rosNode::updateRealMeasurement, this);
-    } else {
-        subHuman = n.subscribe("/Human/pose", 1000, &rosNode::updateFakeMeasurement, this);
-    }
+//    if (real) {
+        subHuman = n.subscribe("/Jetson/cameraDetections", 1000, &rosNode::updateRealMeasurements, this);
+//    } else {
+//        subHuman = n.subscribe("/Human/pose", 1000, &rosNode::updateFakeMeasurement, this);
+//    }
 
     processMap();
-    humanPosVel.x = 0.0;
-    humanPosVel.y = 0.0;
-    humanPosVel.vx = 0.0;
-    humanPosVel.vy = 0.0;
-    measurement.push_back(0.0);
-    measurement.push_back(0.0);
 }
 
 void rosNode::createLine(   int i,                                  // ID
@@ -76,47 +70,144 @@ void rosNode::createLine(   int i,                                  // ID
     marker.color.b = b;
 }
 
-void rosNode::updateFakeMeasurement(const hip_msgs::Pose& poseHuman) {
-    measurement[0] = poseHuman.x;
-    measurement[1] = poseHuman.y;
-}
+/*void rosNode::updateFakeMeasurement(const hip_msgs::detection& humanPose) {
+    measurements.clear();
 
-void rosNode::updateRealMeasurement(const hip_msgs::detections& poseHuman) {
+    measurement meas(humanPose.x, humanPose.y);
+    measurements.push_back(meas);
+}*/
 
-    if (poseHuman.detections.size() > 0) {
+void rosNode::updateRealMeasurements(const hip_msgs::detections& humanPoses) {
 
-        geometry_msgs::Point pointHumanCameraFrame, pointHumanMapFrame;
-        pointHumanCameraFrame.x = poseHuman.detections[0].x;
-        pointHumanCameraFrame.y = poseHuman.detections[0].y;
-        pointHumanCameraFrame.z = poseHuman.detections[0].z;
-
+    if (humanPoses.detections.size() > 0) {
         try
         {
-            string measuredFrameID = poseHuman.header.frame_id;
-            // Check if frame-names start with a "/", as this is not allowed in order to determine the transformations
-            if (measuredFrameID.substr(0,1) == "/") 
+            measurements.clear();
+            for(int i = 0; i < humanPoses.detections.size(); i++)
             {
-                measuredFrameID = measuredFrameID.substr (1,measuredFrameID.length()-1);
+                hip_msgs::detection humanPose = humanPoses.detections[i];
+                string measuredFrameID = humanPoses.header.frame_id;
+                
+                // Check if frame-names start with a "/", as this is not allowed in order to determine the transformations
+                if (measuredFrameID.substr(0,1) == "/") 
+                {
+                    measuredFrameID = measuredFrameID.substr (1,measuredFrameID.length()-1);
+                }
+
+                string updatedSemanticFrameID = semanticMapFrame;
+                if (updatedSemanticFrameID.substr(0,1) == "/") 
+                {
+                    updatedSemanticFrameID = updatedSemanticFrameID.substr (1,updatedSemanticFrameID.length()-1);
+                }
+
+                geometry_msgs::Point pointHumanCameraFrame, pointHumanMapFrame;
+                geometry_msgs::TransformStamped transformStamped = tfBuffer.lookupTransform(updatedSemanticFrameID, measuredFrameID, ros::Time(0));
+
+                pointHumanCameraFrame.x = humanPose.x;
+                pointHumanCameraFrame.y = humanPose.y;
+                pointHumanCameraFrame.z = humanPose.z;
+                tf2::doTransform(pointHumanCameraFrame, pointHumanMapFrame, transformStamped);
+
+                double tMeasurement = humanPoses.header.stamp.sec + humanPoses.header.stamp.nsec/1e9;
+                measurement meas(pointHumanMapFrame.x, pointHumanMapFrame.y, tMeasurement);
+                measurements.push_back(meas);
             }
 
-            string updatedSemanticFrameID = semanticMapFrame;
-            if (updatedSemanticFrameID.substr(0,1) == "/") 
+            HIP::AssociationMatrix assoc_matrix(measurements.size()); // TODO! -> process measurements in KF
+
+            for (unsigned int iMeas = 0; iMeas < measurements.size(); ++iMeas)
             {
-                updatedSemanticFrameID = updatedSemanticFrameID.substr (1,updatedSemanticFrameID.length()-1);
+                measurement meas = measurements[iMeas];
+
+                for (unsigned int iHumans = 0; iHumans < humanFilters.size(); ++iHumans)
+                {
+//                    const ed::EntityConstPtr& e = entities[i_entity];
+                    KalmanFilter human = humanFilters[iHumans]; // TODO add prediction step based on constant velocity model
+                    hip_msgs::PoseVel predictedPos =  human.predictPos(meas.time);
+
+                    //const geo::Pose3D& entity_pose = e->pose();
+//                    const ed::ConvexHull& entity_chull = e->convexHull();
+
+                    float dx = predictedPos.x - meas.x;
+                    float dy = predictedPos.y - meas.y;
+                    float dz = 0;
+
+//                    if (entity_chull.z_max + entity_pose.t.z < cluster.chull.z_min + cluster.pose.t.z
+//                            || cluster.chull.z_max + cluster.pose.t.z < entity_chull.z_min + entity_pose.t.z)
+                        // The convex hulls are non-overlapping in z
+//                        dz = entity_pose.t.z - cluster.pose.t.z;
+
+                    float dist_sq = (dx * dx + dy * dy + dz * dz); // TODO take Mahalanobis distance as criterion?!
+
+                    // TODO: better prob calculation
+                    double prob = 1.0 / (1.0 + 100 * dist_sq);
+
+                    double dt = meas.time - human.getLatestUpdateTime();
+                    double e_max_dist = std::max(0.2, std::min(0.5, dt * 10));
+
+                    if (dist_sq > e_max_dist * e_max_dist)
+                        prob = 0;
+
+                    if (prob > 0)
+                        assoc_matrix.setEntry(iMeas, iHumans, prob);
+                }
             }
 
-            geometry_msgs::TransformStamped transformStamped = tfBuffer.lookupTransform(updatedSemanticFrameID, measuredFrameID, ros::Time(0));
-            tf2::doTransform(pointHumanCameraFrame, pointHumanMapFrame, transformStamped);
+            HIP::Assignment assig;
+            if (!assoc_matrix.calculateBestAssignment(assig))
+            {
+                std::cout << "WARNING: Association failed!" << std::endl;
+                return;
+            }
 
-            // here, only first detection is considered(!)
-            measurement[0] = pointHumanMapFrame.x;
-            measurement[1] = pointHumanMapFrame.y;
+            std::vector<int> objectsAssociated(humanFilters.size(), -1);
+
+            for (unsigned int iMeas = 0; iMeas < measurements.size(); ++iMeas)
+            {
+                measurement meas = measurements[iMeas];
+
+                // Get the assignment for this cluster
+                int iHuman = assig[iMeas];
+
+                if (iHuman == -1)
+                {
+                    // No assignment, so create new object
+                    KalmanFilter human;
+                    human.init(meas.time, meas.x, meas.y);
+                    humanFilters.push_back(human);
+                }
+                else
+                {
+                    // Mark the entity as being associated
+                    objectsAssociated[iHuman] = iMeas;
+
+                    // Update the human pose
+                    std:vector<double> measurementVector;
+                    measurementVector.push_back(meas.x);
+                    measurementVector.push_back(meas.y);
+
+                    hip_msgs::PoseVel updatedHumanPosVel; // TODO where to store?
+                    humanFilters[iHuman].update(updatedHumanPosVel, measurementVector, meas.time);
+                }
+            }
         }
 
         catch (tf2::TransformException &ex) 
         {
             ROS_WARN("%s",ex.what());
             ros::Duration(1.0).sleep();
+        }
+    }
+
+    ros::Time currentTime = ros::Time::now();
+    double curTime = currentTime.toSec();
+    for(int iHuman = 0; iHuman < humanFilters.size(); )
+    {
+        if(curTime - humanFilters[iHuman].getLatestUpdateTime() > 3.0)
+        {
+            humanFilters.erase(humanFilters.begin() + iHuman);
+        } else {
+            iHuman++;
         }
     }
 }
@@ -148,9 +239,10 @@ void rosNode::updateRobotPose(const geometry_msgs::PoseWithCovarianceStamped& ms
 void rosNode::processMap() {
 /// [plot map]
 // create markers for visualization
-    markerA.ns = "wall";
-    markerA.header.frame_id = semanticMapFrame;
-    markerA.action = visualization_msgs::Marker::ADD;
+    visualization_msgs::Marker marker;
+    marker.ns = "wall";
+    marker.header.frame_id = semanticMapFrame;
+    marker.action = visualization_msgs::Marker::ADD;
     //semantic_map = n.advertise<visualization_msgs::MarkerArray>("/HIP/semanticMap",3);
     semantic_map = n.advertise<visualization_msgs::MarkerArray>("/HIP/" + semanticMapFrame,3);
     dynamic_map = n.advertise<visualization_msgs::MarkerArray>("/HIP/dynamicMap",3);
@@ -160,18 +252,18 @@ void rosNode::processMap() {
     n.getParam("/human_intention_prediction/AoI",AoI);
 // plot walls
     for (int i=0;i<walls.size();i++) {
-        createLine(i,walls[i]["x0"],walls[i]["y0"],walls[i]["z0"],walls[i]["x1"],walls[i]["y1"],walls[i]["z1"],1.0,0.0,0.0,0.05,0.4,markerA);
-        markerArrayWalls.markers.push_back(markerA);
+        createLine(i,walls[i]["x0"],walls[i]["y0"],walls[i]["z0"],walls[i]["x1"],walls[i]["y1"],walls[i]["z1"],1.0,0.0,0.0,0.05,0.4,marker);
+        markerArrayWalls.markers.push_back(marker);
     }
 // plot Areas of Interest
-    markerA.ns = "AoI";
+    marker.ns = "AoI";
     for (int i=0;i<AoI.size();i++) {
         if (i==3&&i==4&&i==8) {
-            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.0,0.3,0.0,0.05,0.1,markerA);
-            markerArrayAoI.markers.push_back(markerA);
+            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.0,0.3,0.0,0.05,0.1,marker);
+            markerArrayAoI.markers.push_back(marker);
         } else {
-            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.3,0.0,0.0,0.05,0.1,markerA);
-            markerArrayAoI.markers.push_back(markerA);
+            createLine(i,AoI[i]["x0"],AoI[i]["y0"],AoI[i]["z0"],AoI[i]["x1"],AoI[i]["y1"],AoI[i]["z1"],0.3,0.0,0.0,0.05,0.1,marker);
+            markerArrayAoI.markers.push_back(marker);
         }
     }
 /// [plot map]
@@ -200,55 +292,96 @@ void rosNode::publishTube(hip_msgs::tubes tube, hip_msgs::tubesH tubesH) {
     tubeHTop.publish(tubesH);
 }
 
-void rosNode::publishHypotheses(hip_msgs::hypotheses hypotheses) {
+void rosNode::publishHypotheses(hip_msgs::hypotheses hypotheses, std::string ns) {
+    hypotheses.ns = ns;
     hypothesesTop.publish(hypotheses);
 }
 
 void rosNode::publishHumanPV() {
-    humanPV.publish (humanPosVel);
+    humanPV.publish (humanPosVels);
 }
 
-void rosNode::visualizeHuman() {
-    markerA.ns = "humanState";
-    createLine(1,humanPosVel.x,humanPosVel.y,0.0,humanPosVel.x,humanPosVel.y,1.8,0.0,0.0,1.0,0.3,1.0,markerA);
-    humanState.publish (deleteAllMarker);
-    humanState.publish (markerA);
-    visualization_msgs::Marker markerSpeed;
-    geometry_msgs::Point sample;
-    sample.x  = humanPosVel.x;
-    sample.y = humanPosVel.y;
-    sample.z = 0.0;
-    markerSpeed.points.push_back(sample);
-    sample.x = humanPosVel.x + humanPosVel.vx;
-    sample.y = humanPosVel.y + humanPosVel.vy;
-    sample.z = 0.0;
-    markerSpeed.points.push_back(sample);
-    markerSpeed.type = visualization_msgs::Marker::ARROW;
-    markerSpeed.header.stamp = ros::Time();
+void rosNode::visualizeHumans() {
+ 
+    visualization_msgs::MarkerArray currentHumansState, currentHumansSpeed;
+    hip_msgs::PoseVels humanPosVelsNew;//[humanFilters.size()];
 
-    markerSpeed.scale.x = 0.07;
-    markerSpeed.scale.y = 0.1;
-    markerSpeed.color.a = 1;
-    markerSpeed.color.r = 0;
-    markerSpeed.color.g = 0;
-    markerSpeed.color.b = 1;
-    markerSpeed.ns = "wall";
-    markerSpeed.header.frame_id = semanticMapFrame;
-    humanSpeed.publish(markerSpeed);
+    for(unsigned int i = 0; i < humanFilters.size(); i++)
+    {
+        visualization_msgs::Marker humanState;
+        humanState.ns = "humanState";
+//        humanState.id = i + 1;
+        humanState.action = 0; //# 0 add/modify an object, 1 (deprecated), 2 deletes an object, 3 deletes all objects
+        humanState.header.frame_id = semanticMapFrame;
+
+        std::cout << "visualizeHumans, i = " << i << " humanState.id = " << humanState.id << std::endl;
+
+        hip_msgs::PoseVel humanPosVel = humanFilters[i].predictPos(humanFilters[i].getLatestUpdateTime());
+        humanPosVelsNew.poseVels.push_back(humanPosVel);
+        createLine(i,humanPosVel.x, humanPosVel.y, 0.0, humanPosVel.x, humanPosVel.y, 1.8, 0.0, 0.0, 1.0, 0.3, 1.0, humanState);
+        currentHumansState.markers.push_back(humanState);
+        //humanState.publish (deleteAllMarker);
+
+        visualization_msgs::Marker markerSpeed;
+        geometry_msgs::Point sample;
+        sample.x  = humanPosVel.x;
+        sample.y = humanPosVel.y;
+        sample.z = 0.0;
+        markerSpeed.points.push_back(sample);
+        sample.x = humanPosVel.x + humanPosVel.vx;
+        sample.y = humanPosVel.y + humanPosVel.vy;
+        sample.z = 0.0;
+
+        markerSpeed.points.push_back(sample);
+        markerSpeed.type = visualization_msgs::Marker::ARROW;
+        markerSpeed.header.stamp = ros::Time();
+
+        markerSpeed.scale.x = 0.07;
+        markerSpeed.scale.y = 0.1;
+        markerSpeed.color.a = 1;
+        markerSpeed.color.r = 0;
+        markerSpeed.color.g = 0;
+        markerSpeed.color.b = 1;
+        markerSpeed.ns = "wall";
+        markerSpeed.id = i + 1;
+        markerSpeed.header.frame_id = semanticMapFrame;
+
+        std::cout << "visualizeHumans, i = " << i << " markerSpeed.id = " << markerSpeed.id << std::endl;
+
+        currentHumansSpeed.markers.push_back(markerSpeed);
+    }
+
+    humansState.publish(currentHumansState);
+    humansSpeed.publish(currentHumansSpeed);
+    
+//    hip_msgs::PoseVels humanPosVelsUpdated;
+//    humanPosVelsUpdated.poseVels = humanPosVelsNew;
+    humanPosVels = humanPosVelsNew;
 }
 
-void rosNode::visualizeMeasuredHuman() {
-    markerA.ns = "measuredHuman";
-    markerA.header.frame_id = semanticMapFrame;
+void rosNode::visualizeMeasuredHumans() {
+//    measuredHuman.publish (deleteAllMarker);
+    visualization_msgs::MarkerArray humanMarkers;
 
-    createLine(1,measurement[0],measurement[1],0.0,measurement[0],measurement[1],1.8,0.5,0.5,0.5,0.3,1.0,markerA);
-    measuredHuman.publish (deleteAllMarker);
-    measuredHuman.publish (markerA);
+    for(unsigned int i = 0; i < measurements.size(); i++)
+    {
+        visualization_msgs::Marker humanMarker;
+        humanMarker.ns = "measuredHuman";
+        humanMarker.header.frame_id = semanticMapFrame;
+        humanMarker.action = visualization_msgs::Marker::ADD; //# 0 add/modify an object, 1 (deprecated), 2 deletes an object, 3 deletes all objects
+        // TODO add duration
+
+        createLine(i,measurements[i].x, measurements[i].y, 0.0, measurements[i].x, measurements[i].y, 1.8, 0.5, 0.5, 0.5, 0.3, 1.0, humanMarker);
+        humanMarkers.markers.push_back(humanMarker);
+    }
+
+    measuredHumans.publish (humanMarkers);
 }
 
 void rosNode::visualizeRobot() {
-    markerA.ns = "virtualRobot";
-    markerA.header.frame_id = semanticMapFrame;
+    visualization_msgs::Marker marker;
+    marker.ns = "virtualRobot";
+    marker.header.frame_id = semanticMapFrame;
 
     double xRobot = robotPose.pose.pose.position.x;
     double yRobot = robotPose.pose.pose.position.y;
@@ -265,9 +398,9 @@ void rosNode::visualizeRobot() {
     double r = 153, g = 0.0, b = 153, a = 1.0;
     double radius = 0.3;
 
-     createLine(ID, xL, yL, zL, xR, yR, zR, r, g, b, radius, a,markerA);
+     createLine(ID, xL, yL, zL, xR, yR, zR, r, g, b, radius, a,marker);
      virtualRobot.publish (deleteAllMarker);
-     virtualRobot.publish (markerA);
+     virtualRobot.publish (marker);
 }
 
 void rosNode::setStaticMap(visualization_msgs::MarkerArray staticMap) {

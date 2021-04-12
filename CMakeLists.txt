@@ -54,7 +54,7 @@ include_directories(
    ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(human_intention_prediction src/rosnode.cpp src/main.cpp src/functions.cpp src/functionsDisretizedMap.cpp)
+add_executable(human_intention_prediction src/rosnode.cpp src/main.cpp src/functions.cpp src/functionsDisretizedMap.cpp src/associationMatrix.cpp src/KalmanFilter.cpp)
 target_link_libraries(human_intention_prediction -O2 blas lapack ${catkin_LIBRARIES})
 add_dependencies(human_intention_prediction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 

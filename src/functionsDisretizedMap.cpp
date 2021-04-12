@@ -1399,15 +1399,16 @@ for (int i = 0; i<store.size(); i++) {
 }
 }
 
-void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, double xRobot, double yRobot, double thetaRobot, string robotFrame, string mapFrame) {
+void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, double xRobot, double yRobot, double thetaRobot, 
+string robotFrame, string mapFrame) {
     robot.x = xRobot;
     robot.y = yRobot;
     robot.theta = thetaRobot;
     human.x = x;
     human.y = y;
 
-    std::cout  <<" Update hypotheses: xRobot = " << xRobot << " yRobot = " << yRobot << " thetaRobot = " << thetaRobot 
-    << " humanX = " << x << " humanY = " << y << std::endl;
+    //std::cout  <<" Update hypotheses: xRobot = " << xRobot << " yRobot = " << yRobot << " thetaRobot = " << thetaRobot 
+    //<< " humanX = " << x << " humanY = " << y << std::endl;
 
     dynamicMap.markers.clear();
     bool consider = considerHuman(human,robot);

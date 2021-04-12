@@ -17,7 +17,6 @@
 #include <rosnode.h>
 #include <functionsDiscretizedMap.h>
 
-
 using namespace std;
 
 /// [main]
@@ -40,12 +39,14 @@ int main(int argc, char** argv)
     double v_x = 1.0;
     double v_y = 0.3;
     
-    matrix A,H,P,Q,R,I; // Kalman filter matrices
+//    matrix A,H,P,Q,R,I; // Kalman filter matrices
 
-    initializeKalman(A,H,P,Q,R,I,1.0/15.0);
-    double prevIt = ros::Time::now().toSec();
-    double dt;
-    ros::Rate r(15); // loop at 15 hz
+//    initializeKalman(A,H,P,Q,R,I,1/rate);
+    double tPrev = ros::Time::now().toSec();
+//    double dt;
+
+    double rate = 15.0;
+    ros::Rate r(rate); // loop at 15 hz
 
     double u,v,dist1,dist2,totP;
 
@@ -67,21 +68,42 @@ int main(int argc, char** argv)
         poseValid = (poseValid && rosNode.robotPose.pose.pose.position.y == rosNode.robotPose.pose.pose.position.y);
         poseValid = (poseValid && yawRobot == yawRobot);
 
-        if(poseValid)
+        if(poseValid) // TODO apply for all humans, publish hypotheses on namespace with separate human ID
         {
-            map.updateHypotheses(rosNode.humanPosVel.x, rosNode.humanPosVel.y, rosNode.humanPosVel.vx, rosNode.humanPosVel.vy, 
-                                 rosNode.robotPose.pose.pose.position.x, rosNode.robotPose.pose.pose.position.y, yawRobot, rosNode.semanticMapFrame, rosNode.semanticMapFrame);
+            std::cout << "main, rosNode.humanFilters.size() = " << rosNode.humanFilters.size() << std::endl;
 
-            rosNode.publishHypotheses(map.hypotheses);
-            map.readMap(staticMarkers,dynamicMarkers);
-            if (i%3==0) {
-                rosNode.removeDynamicMap();
+            for(unsigned int iHumans = 0; iHumans < rosNode.humanFilters.size(); iHumans++)
+            {
+                hip_msgs::PoseVel humanPosVel = rosNode.humanFilters[iHumans].predictPos(rosNode.humanFilters[iHumans].getLatestUpdateTime() );
+
+
+                std::cout << "main, iHumans = " << iHumans << " humanPosVel.x = " << humanPosVel.x << " humanPosVel.y = " << humanPosVel.y << std::endl;
+
+                map.updateHypotheses(humanPosVel.x, humanPosVel.y, humanPosVel.vx, humanPosVel.vy, 
+                                    rosNode.robotPose.pose.pose.position.x, rosNode.robotPose.pose.pose.position.y, yawRobot, rosNode.semanticMapFrame,
+                                    rosNode.semanticMapFrame);
+
+                std::string ns = "Hypotheses_Human" +  std::to_string(iHumans);
+                rosNode.publishHypotheses(map.hypotheses, ns);
+                map.readMap(staticMarkers,dynamicMarkers);
+
+                for(unsigned int iMarker = 0; iMarker < dynamicMarkers.markers.size(); iMarker++)
+                {
+                    visualization_msgs::Marker marker = dynamicMarkers.markers[iMarker];
+                    marker.ns = marker.ns + "object" + std::to_string(iHumans);
+                    dynamicMarkers.markers[iMarker] = marker;
+                }
+                
+                if (i%3==0) 
+                {
+                    rosNode.removeDynamicMap();
+                }
+                rosNode.setDynamicMap(dynamicMarkers);
+                rosNode.publishMap();
             }
-            rosNode.setDynamicMap(dynamicMarkers);
-            rosNode.publishMap();
             // }
-            rosNode.visualizeHuman();
-            rosNode.visualizeMeasuredHuman();
+            rosNode.visualizeHumans();
+            rosNode.visualizeMeasuredHumans();
             rosNode.visualizeRobot();
 
             std::cout << "updateHypotheses, visualizations finished" << std::endl;    
@@ -90,10 +112,10 @@ int main(int argc, char** argv)
             ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1000.0)); // Call ROS stream and wait 1000 sec if no new measurement
             // ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0)); // Call ROS stream and wait 1 sec if no new measurement
 
-            dt = ros::Time::now().toSec()-prevIt;
-            updateKalman(A,H,P,Q,R,I,rosNode.humanPosVel,rosNode.measurement,dt);
-            cout<<"dt = "<<dt<<endl;
-            prevIt = ros::Time::now().toSec();
+//            double dt = ros::Time::now().toSec() - tPrev; //TODO use measurement time!
+//            updateKalman(A,H,P,Q,R,I,rosNode.humanPosVel,rosNode.measurement,dt); // TODO -> for all humans
+//            cout<<"dt = "<<dt<<endl;
+//            tPrev = ros::Time::now().toSec();
             rosNode.publishHumanPV();
         } else {
             ros::spinOnce();

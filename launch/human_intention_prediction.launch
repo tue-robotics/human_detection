@@ -4,7 +4,7 @@
 
     <!--Static transform publishers, x y z yaw pitch roll frame_id child_frame_id period_in_ms-->
     <node pkg="tf" type="static_transform_publisher" name="map2semanticMap" args="1.8 0.4 0 -0.23 0 0 /map /semanticMap 100" />
-    <node pkg="tf" type="static_transform_publisher" name="robot2kinect" args="0.0 0 0 0 0 0 /$(arg robotName)/base_link /Jetson 100" />
+    <node pkg="tf" type="static_transform_publisher" name="robot2kinect" args="0.33 -0.01 0 0 -0.24 0 /$(arg robotName)/base_link /Jetson 100" />
 
     <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen">--> <!-- Default -->
     <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen" launch-prefix="xterm -e gdb -_-args">--> <!-- Debug with gdb-->

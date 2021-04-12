@@ -3,7 +3,9 @@ import rospy
 import math
 
 from geometry_msgs.msg import Twist
-from human_walking_detection.msg import Pose
+#from hip_msgs.msg import Pose 
+from hip_msgs.msg import detection 
+from hip_msgs.msg import detections
 
 import sys, select, termios, tty
 
@@ -60,6 +62,7 @@ def getKey():
 
 speed = .1
 turn = .2
+e = "problem"
 
 def vels(speed,turn):
 	return "currently:\tspeed %s\tturn %s " % (speed,turn)
@@ -67,19 +70,21 @@ def vels(speed,turn):
 if __name__=="__main__":
     	settings = termios.tcgetattr(sys.stdin)
 	
-	pub = rospy.Publisher('/Human/pose', Pose, queue_size=10)
+	pub = rospy.Publisher('/Jetson/cameraDetections', detections, queue_size=10)
 	rospy.init_node('teleop_twist_keyboard')
 
 	x = 0
 	y = 0
 	th = 0
 	status = 0
+	cnt = 0
 
 	try:
 		print msg
 		print vels(speed,turn)
 		while(1):
 			key = getKey()
+
 			if key in speedBindings.keys():
 				speed = speed * speedBindings[key][0]
 				turn = turn * speedBindings[key][1]
@@ -99,20 +104,28 @@ if __name__=="__main__":
 					th = 0
 					if (key == '\x03'):
 						break
-				
 
 				posX = posX + x*speed*dt;
 				posY = posY + y*speed*dt;
 				posTheta = posTheta + th*turn*dt;
 
-				twist = Twist()
-				twist.linear.x = x*speed; twist.linear.z = 0; twist.linear.y = y*speed
-				twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = th*turn
-				pose = Pose()
-				pose.x = posX; pose.y = posY; pose.theta = posTheta
-				pose.linear_velocity = math.sqrt((x*speed)*(x*speed) + (y*speed)*(y*speed)); pose.angular_velocity = th*turn;
+				#twist = Twist()
+				#twist.linear.x = x*speed; twist.linear.z = 0; twist.linear.y = y*speed
+				#twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = th*turn
+				Detection = detection()
+				Detection.x = posX; Detection.y = posY; Detection.z = 0.2; Detection.p = 0;
+#				pose.linear_velocity = math.sqrt((x*speed)*(x*speed) + (y*speed)*(y*speed)); pose.angular_velocity = th*turn;
+				Detection2 = detection()
+				Detection2.x = posX + 0.5; Detection2.y = posY + 0.5; Detection2.z = 0.2; Detection2.p = 0;
 
-				pub.publish(pose)
+				detectionsOut = detections()
+				detectionsOut.detections = [Detection, Detection2]
+				detectionsOut.header.seq = cnt;
+				detectionsOut.header.frame_id = "/Jetson"
+				detectionsOut.header.stamp = rospy.Time.now()
+				cnt = cnt + 1
+
+				pub.publish(detectionsOut)
 
 	except:
 		print e
@@ -121,6 +134,13 @@ if __name__=="__main__":
 		twist = Twist()
 		twist.linear.x = 0; twist.linear.y = 0; twist.linear.z = 0
 		twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0
-		pub.publish(twist)
+#		pub.publish(twist)
+#		detection = detection()
+#		detection.x = 0; detection.y = 0; detection.theta = 0
+#		detections = detections()
+#		detections.detections = [detection]
+#		detections.header.seq = cnt;
+#		detections.header.frame_id = "/Jetson"
+#		detections.header.stamp = rospy.Time.now()
 
 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)

@@ -1,29 +1,9 @@
 #ifndef HIP_ROSNODE_H_
 #define HIP_ROSNODE_H_
 
-#include <hip_msgs/Pose.h>
-#include <hip_msgs/PoseVel.h>
-
 #include <ros/ros.h>
 
-#include <tf2_ros/transform_listener.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-//#include <tf/transform_listener.h>
-  #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
-   //#include <tf2_ros/transform_listener.h>
-
-#include <visualization_msgs/MarkerArray.h>
-
-#include "geometry_msgs/TransformStamped.h"
-#include "geometry_msgs/Pose.h"
-#include "geometry_msgs/PoseWithCovarianceStamped.h"
-
-#include <hip_msgs/detection.h>
-#include <hip_msgs/detections.h>
-
-// ROS-msgs
+// ROS- hip_msgs // TODO all these msgs required? 
 #include <hip_msgs/line.h>
 #include <hip_msgs/lines.h>
 #include <hip_msgs/tube.h>
@@ -32,15 +12,45 @@
 #include <hip_msgs/tubesH.h>
 #include <hip_msgs/hypothesis.h>
 #include <hip_msgs/hypotheses.h>
+#include <hip_msgs/Pose.h>
+#include <hip_msgs/PoseVel.h>
+#include <hip_msgs/PoseVels.h>
+#include <hip_msgs/detection.h>
+#include <hip_msgs/detections.h>
+
+// ROS tf2
+#include <tf2_ros/transform_listener.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+#include <visualization_msgs/MarkerArray.h>
+
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+
+#include "associationMatrix.h"
+#include "KalmanFilter.h"
 
 using namespace std;
 
-class rosNode {     
+class rosNode {
     public:
     rosNode();
         // matrix A(4,vector<double>(4));
+        struct measurement
+        {
+          measurement(double x_, double y_, double time_) : x(x_), y(y_), time(time_) {}
 
-        vector<double> measurement;
+          double x;
+          double y;
+          double time;
+        };
+
+        std::vector<KalmanFilter> humanFilters;
+
+        vector<measurement> measurements;
 
         // double[2] measurement;
         double p1,p2,p3,p4;
@@ -50,45 +60,45 @@ class rosNode {
 
         ros::Publisher semantic_map;
         ros::Publisher dynamic_map;
-        ros::Publisher measuredHuman;
+        ros::Publisher measuredHumans;
         ros::Publisher virtualRobot;
-        ros::Publisher humanState;
+        ros::Publisher humansState;
         ros::Publisher humanPV;
         ros::Publisher tubeTop;
         ros::Publisher tubeHTop;
         ros::Publisher hypothesesTop;
-        ros::Publisher humanSpeed;
+        ros::Publisher humansSpeed;
 
         ros::Subscriber subHuman;
         ros::Subscriber subRobotPose;
 
         tf2_ros::Buffer tfBuffer;
         //tf2_ros::TransformListener* pTfListener;//(tfBuffer);
-         tf2_ros::TransformListener tfListener;//(tfBuffer);
+        tf2_ros::TransformListener tfListener;//(tfBuffer);
 
         std::string robotName;
         geometry_msgs::PoseWithCovarianceStamped robotPose;
 
-        hip_msgs::PoseVel humanPosVel;
+//        std::vector<hip_msgs::PoseVel> humansPosVel;
+        hip_msgs::PoseVels humanPosVels;
         visualization_msgs::Marker deleteAllMarker;
         visualization_msgs::MarkerArray deleteAllMarkerArray;
         visualization_msgs::MarkerArray markerArrayWalls;
         visualization_msgs::MarkerArray markerArrayAoI;
         visualization_msgs::MarkerArray markerArrayStatic;
         visualization_msgs::MarkerArray markerArrayDynamic;
-        visualization_msgs::Marker markerA;
         hip_msgs::tubes globalTube;
 
-        int a=4;
+        int a = 4; // Meaning of this variable?
 
         // rosparam
         int iMax;
         bool real;
         string semanticMapFrame;
-        //double xRobot,yRobot,thetaRobot;
   
         //functions
-        void createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g, double b, double radius, double a, visualization_msgs::Marker &marker);
+        void createLine(int i, double xL, double yL, double zL, double xR, double yR, double zR, double r, double g,
+                        double b, double radius, double a, visualization_msgs::Marker &marker);
 
         void processMap();
 
@@ -96,17 +106,18 @@ class rosNode {
 
         void publishHumanPV();
 
-        void visualizeHuman();
+        void visualizeHumans();
 
         void publishTube();
 
-        void visualizeMeasuredHuman();
+        void visualizeMeasuredHumans();
 
         void initialize();
 
-        void updateFakeMeasurement(const hip_msgs::Pose& poseHuman);
+//        void updateFakeMeasurement(const hip_msgs::Pose& poseHuman);
+        void updateFakeMeasurement(const hip_msgs::detection& humanPose);
 
-        void updateRealMeasurement(const hip_msgs::detections& poseHuman);
+        void updateRealMeasurements(const hip_msgs::detections& humanPoses);
 
         void updateRobotPose(const geometry_msgs::PoseWithCovarianceStamped& msg);
 
@@ -122,7 +133,7 @@ class rosNode {
 
         void publishTube(hip_msgs::tubes tube, hip_msgs::tubesH);
 
-        void publishHypotheses(hip_msgs::hypotheses hypotheses);
+        void publishHypotheses(hip_msgs::hypotheses hypotheses, std::string ns);
 
         void visualizeRobot();
 
