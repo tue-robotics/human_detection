@@ -51,6 +51,10 @@ speedBindings={
 posX = 0.0
 posY = 0.0
 posTheta = 0.0
+
+posX2 = 0.0
+posY2 = 0.0
+
 dt = 0.1
 
 def getKey():
@@ -105,8 +109,13 @@ if __name__=="__main__":
 					if (key == '\x03'):
 						break
 
+
 				posX = posX + x*speed*dt;
+				posX2 = posX2 - x*speed*dt;
+
 				posY = posY + y*speed*dt;
+				posY2 = posY2 - y*speed*dt;
+			
 				posTheta = posTheta + th*turn*dt;
 
 				#twist = Twist()
@@ -116,7 +125,7 @@ if __name__=="__main__":
 				Detection.x = posX; Detection.y = posY; Detection.z = 0.2; Detection.p = 0;
 #				pose.linear_velocity = math.sqrt((x*speed)*(x*speed) + (y*speed)*(y*speed)); pose.angular_velocity = th*turn;
 				Detection2 = detection()
-				Detection2.x = posX + 0.5; Detection2.y = posY + 0.5; Detection2.z = 0.2; Detection2.p = 0;
+				Detection2.x = posX2 + 2.5; Detection2.y = posY2; Detection2.z = 0.2; Detection2.p = 0;
 
 				detectionsOut = detections()
 				detectionsOut.detections = [Detection, Detection2]

@@ -35,6 +35,8 @@
 
 using namespace std;
 
+#define MARKER_LIFETIME 2.0
+
 class rosNode {
     public:
     rosNode();

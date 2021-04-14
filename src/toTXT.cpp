@@ -44,15 +44,15 @@ int main(int argc, char** argv)
     {      
         stamp = ros::Time::now();
         time = stamp.toNSec();
-        cout<<setprecision(35)<<time<<endl;
+        cout << setprecision(35) << time << endl;
         ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1000.0)); // Call ROS stream and wait 1000 sec if no new measurement
-        cout<<"newmeasurement, "<<humanPosVel.x<<endl;
-        file<<setprecision(35)<<time;
-        file<<","<<humanPosVel.x<<","<<humanPosVel.y<<","<<humanPosVel.vx<<","<<humanPosVel.vy;
+        cout << "newmeasurement, " << humanPosVel.x << endl;
+        file << setprecision(35)<<time;
+        file << "," << humanPosVel.x << "," << humanPosVel.y << "," << humanPosVel.vx << "," << humanPosVel.vy;
         // file<<setprecision(10)<<time;
-        for (int i = 0; i<hypothesesList.hypotheses.size(); i++) {
-            file<<","<<hypothesesList.hypotheses[i].index;
-                file<<","<<hypothesesList.hypotheses[i].p;
+        for (int i = 0; i < hypothesesList.hypotheses.size(); i++) {
+            file << "," << hypothesesList.hypotheses[i].index;
+                file << "," << hypothesesList.hypotheses[i].p;
         }
         file<<"\n";
     }

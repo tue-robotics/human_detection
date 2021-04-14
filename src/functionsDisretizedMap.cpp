@@ -347,7 +347,7 @@ void vectorFieldMap::clearTube(visualization_msgs::MarkerArray map) {
 }
 
 void vectorFieldMap::plotStandingTube(double x, double y, double radius, double r, double g, double b, double a, string ns,
-                                        visualization_msgs::MarkerArray &map, string mapFrame) {
+                                        visualization_msgs::MarkerArray &map, string mapFrame, double lifetime) {
     visualization_msgs::Marker marker;
     marker.header.frame_id = mapFrame;
     marker.action = visualization_msgs::Marker::ADD;
@@ -371,12 +371,13 @@ void vectorFieldMap::plotStandingTube(double x, double y, double radius, double 
         marker.points.push_back(sample);
 
     }   
-    marker.id = map.markers.size();;
+    marker.id = map.markers.size();
+    marker.lifetime = ros::Duration(lifetime);
     map.markers.push_back(marker);
     marker.points.clear();
 }
 
-void vectorFieldMap::plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map, double markerLifetime) {
     vector<double> var;
     if (tube.curved) {
         linspace(0.0,tube.theta_tot,n1,var);
@@ -428,6 +429,11 @@ void vectorFieldMap::plotTube(hip_msgs::singleTube tube, int n1, int n2,int subI
             marker.points.push_back(sample);
         }
     marker.id = subID + i;
+
+    if(markerLifetime > 0)
+    {
+        marker.lifetime = ros::Duration(markerLifetime);
+    }
     map.markers.push_back(marker);
     marker.points.clear();
     }
@@ -435,7 +441,7 @@ void vectorFieldMap::plotTube(hip_msgs::singleTube tube, int n1, int n2,int subI
 
 void vectorFieldMap::plotLine(  double x1, double x2, double y1, double y2, 
                                 int i, double r, double g, double b, double a, 
-                                string ns, string frame, visualization_msgs::MarkerArray &map) {
+                                string ns, string frame, visualization_msgs::MarkerArray &map, double markerLifetime) {
     visualization_msgs::Marker marker;
     //marker.header.frame_id = "/semanticMap";
     marker.header.frame_id = frame;
@@ -461,19 +467,20 @@ void vectorFieldMap::plotLine(  double x1, double x2, double y1, double y2,
     sample.y = y2;
     sample.z = 0.0;
     marker.points.push_back(sample);
+    marker.lifetime = ros::Duration(markerLifetime);
     
     marker.id = i;
     map.markers.push_back(marker);
     marker.points.clear();
 } 
 
-void vectorFieldMap::plotAOI(hip_msgs::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotAOI(hip_msgs::singleTube tube, int index, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map) {
     visualization_msgs::Marker marker;
     marker.header.frame_id = "/semanticMap";
     //marker.header.frame_id = "/map";
     marker.action = visualization_msgs::Marker::ADD;
     marker.header.stamp = ros::Time();
-    marker.ns = ns;
+    
     // marker.type = visualization_msgs::Marker::POINTS;
     marker.type = visualization_msgs::Marker::LINE_STRIP;
     marker.color.a = a;
@@ -488,6 +495,7 @@ void vectorFieldMap::plotAOI(hip_msgs::singleTube tube, int n, int subID, double
 
     vectorFieldMap::positionVars O;
     double zN;
+    double xSum = 0.0, ySum = 0.0;
     for (int j = 0; j<n+1; j++) {
         zN = tube.min+double(j)*(tube.max-tube.min)/double(n);
         O = Fry(tube,p,zN,0);
@@ -495,17 +503,49 @@ void vectorFieldMap::plotAOI(hip_msgs::singleTube tube, int n, int subID, double
         sample.y = O.y;
         sample.z = 0.0;
         marker.points.push_back(sample);
+
+        if (j != n)
+        {
+            xSum += O.x;
+            ySum += O.y;
+        }
     }
     marker.id = subID;
     map.markers.push_back(marker);
+
+    // Add marker ID as well for visualization purposes
+    marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+
+    marker.pose.position.x = xSum/n;
+    marker.pose.position.y = ySum/n;
+    marker.pose.position.z = 0.0;
+
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+
+    marker.ns = ns + "_IDs";
+    marker.text = std::to_string(index);
+    marker.scale.z = 0.5;
+    map.markers.push_back(marker);
+
     marker.points.clear();
 } 
 
-void vectorFieldMap::linesToTube(hip_msgs::lines &lines,hip_msgs::tubes &tubes,double id,TBCS TBC,bool marked) {
+void vectorFieldMap::linesToTube(hip_msgs::lines &lines, hip_msgs::tubes &tubes, double id, TBCS TBC, bool marked) { 
+    // funtion which creates the walking routes
+    // lijn aanmaken met createlinetemp -> gradienten op 0 zetten
+    // 2 lijnen in lineslist zetten en in deze functie gooien en dan zou ie aangemaakt moeten zijn,
+    // functionsDiscretizedmap -> deze funtie helemaal onderaan aanroepen
+
+    // TBC -> tbc.i naar -1 zetten.  Heeft te maken met het opknippen van de tube in componenten
+
     struct positionVars result;
     hip_msgs::lines linesTemp;
     hip_msgs::singleTube tubeTemp;
     hip_msgs::tube tube;
+
 for (int element = 0;element<lines.line.size()-1;element++) {
     linesTemp.line.push_back(lines.line[element]);
     linesTemp.line.push_back(lines.line[element+1]);
@@ -964,7 +1004,6 @@ void vectorFieldMap::distEnd(double x,double y,vector<recursiveWalkStore> &store
     vector<int> index;
     next.clear();
 
-
     vector<int> to;
     vector<double> d_old;
     vector<double> pStartStore;
@@ -1383,36 +1422,100 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
     }
 }
 
-void vectorFieldMap::createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH) {
-hip_msgs::tubes tubeTemp;
+void vectorFieldMap::createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH, std::vector<KalmanFilter> humanFilters, int humanConsidered) {
+hip_msgs::tubes tubeTemp; // bevat deel tubes (bv, bocht, kruising)
+// dir -> direction which can be +1 or -1
+//store: alle mogelijke paden die iemand kan lopen
+// store[i].path[j] -> componenten van pad
 for (int i = 0; i<store.size(); i++) {
     for (int j = 0; j<store[i].path.size()-1; j++) {
         tubeTemp.tube.push_back(tube.tube[store[i].path[j]]);
         tubeTemp.tube[j].main.dir = G.A[store[i].path[j+1]][store[i].path[j]];
     }
-    borderTransform(tubeTemp);
-    addObject(tubeTemp,robot,0);
-    addObject(tubeTemp,robot,1);
-    addObject(tubeTemp,robot,2);
-    tubesH.push_back(tubeTemp);
+
+    borderTransform(tubeTemp); // bovenkant en onderkant (stroomlijn) van de tube 0 en 1. Maakt grenzen van het veld 0 en 1, constante waarde geeft stroomlijn
+    addObject(tubeTemp,robot,0); // linksom
+    addObject(tubeTemp,robot,1); // rechtsom
+    addObject(tubeTemp,robot,2);  // tegen robot aan (wordt toegevoegd in tubetemp)
+    tubesH.push_back(tubeTemp); // zet hier een extra
     tubeTemp.tube.clear();
 }
+
+for(int i = 0; i < humanFilters.size(); i++)
+{
+    if(i == humanConsidered)
+    {
+        continue;
+    }
+
+    hip_msgs::PoseVel thisHuman = humanFilters[humanConsidered].predictPos(humanFilters[humanConsidered].getLatestUpdateTime() ); // TODO propagate to now?
+    hip_msgs::PoseVel otherHuman = humanFilters[i].predictPos(humanFilters[i].getLatestUpdateTime() );
+
+// tubeTemp per persoon hier een tube toevoegen zoals in regel 530 beschreven
+//tubeTemp vullen met alle benodige onderdelen
+
+// tubeTemp.tube[j].main.dir ook toevoegen
+// lijnen definieren in de loodrechtrichting
+
+    TBCS TBC;
+    TBC.i = -1;
+
+    // perpendicular direction
+    double dx = otherHuman.x - thisHuman.x;
+    double dy = otherHuman.y - thisHuman.y;
+    double vectorLength = sqrt( pow(dx, 2.0) + pow(dy, 2.0) );
+    double width = 0.5; // [m]
+
+    double dxPerpendicular = -0.5*width/vectorLength*dy;
+    double dyPerpendicular =  0.5*width/vectorLength*dx;
+    
+    hip_msgs::lines lines;
+    hip_msgs::line lineTemp;
+    lineTemp = createLineTemp(thisHuman.x + dxPerpendicular, thisHuman.x - dxPerpendicular, thisHuman.y + dyPerpendicular, thisHuman.y - dyPerpendicular, 0.0, 0.0);
+    lines.line.push_back(lineTemp);
+
+    // createLineTemp(double x1,double x2,double y1,double y2,double th1, double th2)
+
+    lineTemp = createLineTemp(otherHuman.x + dxPerpendicular, otherHuman.x - dxPerpendicular, otherHuman.y + dyPerpendicular, otherHuman.y - dyPerpendicular,0.0, 0.0);
+    lines.line.push_back(lineTemp);
+    linesToTube(lines, tubeTemp, 0, TBC, 0);
+
+//    marked ??
+//    id
+    //linesToTube(hip_msgs::lines &lines, hip_msgs::tubes &tubes, double id, TBCS TBC, bool marked)
+
+    for(int j=0; j < tubeTemp.tube.size(); j++)
+    {
+        tubeTemp.tube[j].main.dir = 1;
+    }
+    
+
+    createGraph(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
+    createGraphShort(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
+//    borderTransform(tubeTemp); // required?
+    tubesH.push_back(tubeTemp);
 }
 
-void vectorFieldMap::updateHypotheses(double x, double y, double vx, double vy, double xRobot, double yRobot, double thetaRobot, 
-string robotFrame, string mapFrame) {
+}
+
+void vectorFieldMap::updateHypotheses(//double x, double y, double vx, double vy, 
+std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, double yRobot, double thetaRobot, string robotFrame, string mapFrame, double markerLifetime) {
+
+    // give list of all persons and id of person which is considered atm to derive human position
+
     robot.x = xRobot;
     robot.y = yRobot;
     robot.theta = thetaRobot;
-    human.x = x;
-    human.y = y;
-
-    //std::cout  <<" Update hypotheses: xRobot = " << xRobot << " yRobot = " << yRobot << " thetaRobot = " << thetaRobot 
-    //<< " humanX = " << x << " humanY = " << y << std::endl;
-
+    hip_msgs::PoseVel thisHuman = humanFilters[humanConsidered].predictPos(humanFilters[humanConsidered].getLatestUpdateTime() );
+//std::cout << "updateHypotheses, humanConsidered = " << humanConsidered << " thisHuman.x = " << thisHuman.x << " thisHuman.y = " << thisHuman.y << std::endl;
+    human.x = thisHuman.x;
+    human.y = thisHuman.y;
+/*    double vx = thisHuman.vx;
+    double vy = thisHuman.vy;
+*/
     dynamicMap.markers.clear();
     bool consider = considerHuman(human,robot);
-    plotRobot(robot, robotFrame);
+    plotRobot(robot, robotFrame, markerLifetime);
     vector<hip_msgs::tubes> tubesH;
 
     if (consider) 
@@ -1432,7 +1535,7 @@ string robotFrame, string mapFrame) {
         createDynamicAsOI(globalTube,robot.x,robot.y,G,seenTubes,openTubes,robot.dMax,store);
         openTubes.clear();
         store.clear();
-        createDynamicAsOI(globalTube,x,y,G,openTubes,seenTubes,human.dMax,store);
+        createDynamicAsOI(globalTube,thisHuman.x,thisHuman.y,G,openTubes,seenTubes,human.dMax,store);
         vector<hip_msgs::tubes> tubesHOld;
         bool skip,same;
         vector<int> removeElements;
@@ -1453,9 +1556,10 @@ string robotFrame, string mapFrame) {
 
 
 
-        createTubeHypothesis(globalTube,store,G,robot,tubesH);
+        createTubeHypothesis(globalTube, store, G, robot, tubesH, humanFilters, humanConsidered);
         // cout<<tubesH.size()<<endl;
-        validateHypotheses(x, y, vx, vy, tubesH);
+        hypotheses.hypotheses.push_back(hypothesisTemp);
+        validateHypotheses(thisHuman.x, thisHuman.y, thisHuman.vx, thisHuman.vy, tubesH);
 
         // cout<<"debug3: "<<tubesH.size()<<endl;
 
@@ -1479,7 +1583,7 @@ string robotFrame, string mapFrame) {
                         }
                     }
                 }
-                plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].main,10,dynamicMap.markers.size(),p*0.95+0.05,"AoIMap",hypotheses.hypotheses[i].pStore,dynamicMap);
+                plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].main, hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMap", hypotheses.hypotheses[i].pStore, dynamicMap);
             }
         }
 
@@ -1489,7 +1593,7 @@ string robotFrame, string mapFrame) {
             pTotPlot=pTotPlot + hypotheses.hypotheses[i].pAOI;
         }
         pTotPlot=pTotPlot+hypotheses.hypotheses[hypotheses.hypotheses.size()-1].p;
-        plotLine(-0.4,-0.4,6.0,6.5-(6.5-2.5)*(1-pTotPlot),dynamicMap.markers.size(),0.5,0,0.5,0.6,"dynamicMapNOTA", "/semanticMap",dynamicMap); 
+        plotLine(-0.4,-0.4,6.0,6.5-(6.5-2.5)*(1-pTotPlot),dynamicMap.markers.size(),0.5,0,0.5,0.6,"dynamicMapNOTA", "/semanticMap",dynamicMap, markerLifetime); 
         // cout<<"debug4: "<<hypotheses.hypotheses.size()<<", "<<tubesH.size()<<endl;
         globalTubesH.tubeH.clear();
         for (int i = 0; i<tubesH.size();i++) {
@@ -1499,30 +1603,31 @@ string robotFrame, string mapFrame) {
         for (int i = 0; i<tubesH.size(); i++) {
                 for (int j = 0; j<tubesH[i].tube.size();j++) {
                     // if (hypotheses.hypotheses[i].index==15) {
-                    plotTube(tubesH[i].tube[j].main,20,2,dynamicMap.markers.size(),0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*1.0+0.00,"dynamicMap",dynamicMap);
+                    plotTube(tubesH[i].tube[j].main,20,2,dynamicMap.markers.size(),0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*1.0+0.00,"dynamicMap",dynamicMap, markerLifetime);
+                    //plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map, double markerLifetime) {
                     for (int z = 0; z<tubesH[i].tube[j].subTubes0.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubes0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMap0",dynamicMap);
+                        plotTube(tubesH[i].tube[j].subTubes0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMap0",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubes1.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubes1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMap1",dynamicMap);
+                        plotTube(tubesH[i].tube[j].subTubes1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMap1",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubes2.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubes2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMap2",dynamicMap);
+                        plotTube(tubesH[i].tube[j].subTubes2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMap2",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubesB0.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubesB0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMapB0",dynamicMap);
+                        plotTube(tubesH[i].tube[j].subTubesB0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMapB0",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubesB1.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubesB1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMapB1",dynamicMap);
+                        plotTube(tubesH[i].tube[j].subTubesB1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMapB1",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubesB2.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubesB2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMapB2",dynamicMap);
+                        plotTube(tubesH[i].tube[j].subTubesB2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMapB2",dynamicMap, markerLifetime);
                     }
                     // }
                 }
         }
     
-    plotStandingTube(x, y, 0.5, 0.0, 1.0, 0.0, hypotheses.hypotheses[hypotheses.hypotheses.size()-1].p*1.0 + 0.00, "AoIMap", dynamicMap, mapFrame);
+    plotStandingTube(thisHuman.x, thisHuman.y, 0.5, 0.0, 1.0, 0.0, hypotheses.hypotheses[hypotheses.hypotheses.size()-1].p*1.0 + 0.00, "AoIMap", dynamicMap, mapFrame, markerLifetime);
 
     }
 
@@ -2210,7 +2315,7 @@ if (count>0) {
 }
 }
 
-void vectorFieldMap::plotRobot(hip_msgs::robot object, string robotFrame) {
+void vectorFieldMap::plotRobot(hip_msgs::robot object, string robotFrame, double markerLifetime) {
     double theta, l, b, ct, st;
     theta = object.theta;
     l = object.l;
@@ -2230,10 +2335,10 @@ void vectorFieldMap::plotRobot(hip_msgs::robot object, string robotFrame) {
     y[3] =  l/2.0*st-b/2.0*ct+object.y;
 
 //    string frame = robotFrame;
-    plotLine(x[0], x[1], y[0], y[1],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
-    plotLine(x[1], x[2], y[1], y[2],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
-    plotLine(x[2], x[3], y[2], y[3],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
-    plotLine(x[3], x[0], y[3], y[0],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap);
+    plotLine(x[0], x[1], y[0], y[1],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap, markerLifetime);
+    plotLine(x[1], x[2], y[1], y[2],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap, markerLifetime);
+    plotLine(x[2], x[3], y[2], y[3],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap, markerLifetime);
+    plotLine(x[3], x[0], y[3], y[0],dynamicMap.markers.size() ,0, 1, 0.5, 0.7, "robot", robotFrame, dynamicMap, markerLifetime);
 
 }
 
@@ -2554,9 +2659,9 @@ void vectorFieldMap::initializeMap() {
         lines.line.push_back(lineTemp);
     linesToTube(lines,globalTube,0,TBC,0);
 
-
+    double markerLifetime = -1;
     for (int i=0;i<globalTube.tube.size();i++) {
-        plotTube(globalTube.tube[i].main,20,5,staticMap.markers.size(),0,0,1.0,1.0,1.0,0.8,"staticMapTubes",staticMap);
+        plotTube(globalTube.tube[i].main,20,5,staticMap.markers.size(),0,0,1.0,1.0,1.0,0.8,"staticMapTubes",staticMap, markerLifetime);
     }
     createGraph(globalTube, G);
     createGraphShort(globalTube, G);
