@@ -117,3 +117,11 @@ double KalmanFilter::getLatestUpdateTime()
 {
     return tLatestUpdate_;
 }
+
+std::string KalmanFilter::toString()
+{
+    std::stringstream ss;
+    ss << "KF_state = " << x_[0][0] << ", " << x_[1][0] << ", " << x_[2][0] << ", " << x_[3][0] << std::endl;
+
+    return ss.str();
+}

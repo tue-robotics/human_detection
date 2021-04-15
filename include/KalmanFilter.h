@@ -18,6 +18,9 @@ public:
 
     double getLatestUpdateTime();
 
+    std::string toString();
+
+
 protected:
     matrix I_; // Identity Matrix
 

@@ -79,6 +79,8 @@ void rosNode::createLine(   int i,                                  // ID
 
 void rosNode::updateRealMeasurements(const hip_msgs::detections& humanPoses) {
 
+std:cout << "updateRealMeasurements, humanPoses.size() = " << humanPoses.detections.size() << std::endl;
+
     if (humanPoses.detections.size() > 0) {
         try
         {
@@ -101,14 +103,18 @@ void rosNode::updateRealMeasurements(const hip_msgs::detections& humanPoses) {
                 }
 
                 geometry_msgs::Point pointHumanCameraFrame, pointHumanMapFrame;
+std::cout <<"updateREalMeasurements,targer_frame updatedSemanticFrameID = " << updatedSemanticFrameID << std::endl;
                 geometry_msgs::TransformStamped transformStamped = tfBuffer.lookupTransform(updatedSemanticFrameID, measuredFrameID, ros::Time(0));
 
                 pointHumanCameraFrame.x = humanPose.x;
                 pointHumanCameraFrame.y = humanPose.y;
                 pointHumanCameraFrame.z = humanPose.z;
-                tf2::doTransform(pointHumanCameraFrame, pointHumanMapFrame, transformStamped);
+std::cout << "updateRealMeasurements: updatedSemanticFrameID = " << updatedSemanticFrameID << " measuredFrameID = " << measuredFrameID << std::endl;
+			tf2::doTransform(pointHumanCameraFrame, pointHumanMapFrame, transformStamped);
+
 
                 double tMeasurement = humanPoses.header.stamp.sec + humanPoses.header.stamp.nsec/1e9;
+std::cout << "updateRealMeasurement: tMeasurement = " << tMeasurement << " stamp.sec = " << humanPoses.header.stamp.sec << " stamp.nsec = " << humanPoses.header.stamp.nsec << std::endl;
                 measurement meas(pointHumanMapFrame.x, pointHumanMapFrame.y, tMeasurement);
                 measurements.push_back(meas);
             }
@@ -123,8 +129,12 @@ void rosNode::updateRealMeasurements(const hip_msgs::detections& humanPoses) {
                 {
 //                    const ed::EntityConstPtr& e = entities[i_entity];
                     KalmanFilter human = humanFilters[iHumans]; // TODO add prediction step based on constant velocity model
+
+		    std::cout << "updateRealMeasurement, dt = " << meas.time - human.getLatestUpdateTime() << std::endl;
                     hip_msgs::PoseVel predictedPos =  human.predictPos(meas.time);
 
+std::cout << "statePos = " << human.toString() << std::endl;
+std::cout << "predictedPos = " << predictedPos.x << ", " << predictedPos.y << std::endl;
                     //const geo::Pose3D& entity_pose = e->pose();
 //                    const ed::ConvexHull& entity_chull = e->convexHull();
 
@@ -132,18 +142,23 @@ void rosNode::updateRealMeasurements(const hip_msgs::detections& humanPoses) {
                     float dy = predictedPos.y - meas.y;
                     float dz = 0;
 
+		std::cout << "updateRealMeasurement, dx, dy, dz = " << dx << ", " << dy << ", " << dz << std::endl;
+
 //                    if (entity_chull.z_max + entity_pose.t.z < cluster.chull.z_min + cluster.pose.t.z
 //                            || cluster.chull.z_max + cluster.pose.t.z < entity_chull.z_min + entity_pose.t.z)
                         // The convex hulls are non-overlapping in z
 //                        dz = entity_pose.t.z - cluster.pose.t.z;
 
                     float dist_sq = (dx * dx + dy * dy + dz * dz); // TODO take Mahalanobis distance as criterion?!
+std::cout << "updateRealMeasurement, dist = " << sqrt(dist_sq) << std::endl;
 
                     // TODO: better prob calculation
                     double prob = 1.0 / (1.0 + 100 * dist_sq);
 
                     double dt = meas.time - human.getLatestUpdateTime();
                     double e_max_dist = std::max(0.2, std::min(0.5, dt * 10));
+
+std::cout << "updateRealMeasurement, e_max_dist = " << e_max_dist << std::endl;
 
                     if (dist_sq > e_max_dist * e_max_dist)
                         prob = 0;
@@ -174,7 +189,11 @@ void rosNode::updateRealMeasurements(const hip_msgs::detections& humanPoses) {
                     // No assignment, so create new object
                     KalmanFilter human;
                     human.init(meas.time, meas.x, meas.y);
+
+//		    std::cout << "updateREalMeasurement, before add new filter, humanFilters.size() = " << humanFilters.size() << std::endl;
                     humanFilters.push_back(human);
+//		    std::cout << "updateREalMeasurement, KF init, state = " << human.toString();
+//		    std::cout << "updateREalMeasurement, afer add new filter, humanFilters.size() = " << humanFilters.size() << std::endl;
                 }
                 else
                 {
@@ -182,27 +201,32 @@ void rosNode::updateRealMeasurements(const hip_msgs::detections& humanPoses) {
                     objectsAssociated[iHuman] = iMeas;
 
                     // Update the human pose
-                    std:vector<double> measurementVector;
+                    std::vector<double> measurementVector;
                     measurementVector.push_back(meas.x);
                     measurementVector.push_back(meas.y);
 
                     hip_msgs::PoseVel updatedHumanPosVel; // TODO where to store?
                     humanFilters[iHuman].update(updatedHumanPosVel, measurementVector, meas.time);
+//		    std::cout << "updateRealMeasurement, KF updated, state = " << humanFilters[iHuman].toString();
                 }
             }
         }
 
         catch (tf2::TransformException &ex) 
         {
-            ROS_WARN("%s",ex.what());
+        
+//std::cout <<"updateRealMeasurements, try failed" << std::endl;
+    ROS_WARN("%s %s %d",ex.what(), __FILE__, __LINE__);
             ros::Duration(1.0).sleep();
         }
     }
 
+//    std::cout << "updateRealMeasurement, human filters size before erasing filters = " << humanFilters.size() << std::endl;
     ros::Time currentTime = ros::Time::now();
     double curTime = currentTime.toSec();
     for(int iHuman = 0; iHuman < humanFilters.size(); )
     {
+//std::cout << "updateRealMeasurement, curTime = " << curTime << ", filtertime = " << humanFilters[iHuman].getLatestUpdateTime() << std::endl;
         if(curTime - humanFilters[iHuman].getLatestUpdateTime() > 3.0)
         {
             humanFilters.erase(humanFilters.begin() + iHuman);
@@ -226,11 +250,13 @@ void rosNode::updateRobotPose(const geometry_msgs::PoseWithCovarianceStamped& ms
             updatedSemanticFrameID = updatedSemanticFrameID.substr (1,updatedSemanticFrameID.length()-1);
         }
 
+//std::cout <<"updateREalMeasurements,targer_frame updatedSemanticFrameID in updaterRobotpose = " << updatedSemanticFrameID << std::endl;
         transformStamped = tfBuffer.lookupTransform(updatedSemanticFrameID, updatedFrameID, ros::Time(0));
+//std::cout << "rosnode, update robot pose, doTransform robotpose frame id = " << robotPose.header.frame_id << std::endl;
         tf2::doTransform(msg, robotPose, transformStamped);
     }
     catch (tf2::TransformException &ex) {
-      ROS_WARN("%s",ex.what());
+      ROS_WARN("%s %s %d",ex.what(), __FILE__, __LINE__);
       ros::Duration(1.0).sleep();
 //      continue;
     }
@@ -306,19 +332,23 @@ void rosNode::visualizeHumans() {
     visualization_msgs::MarkerArray currentHumansState, currentHumansSpeed;
     hip_msgs::PoseVels humanPosVelsNew;//[humanFilters.size()];
 
-    for(unsigned int i = 0; i < humanFilters.size(); i++)
+	std::cout << "humanFilters, size() = " << humanFilters.size() << std::endl;    
+
+for(unsigned int i = 0; i < humanFilters.size(); i++)
     {
         visualization_msgs::Marker humanState;
         humanState.ns = "humanState";
 //        humanState.id = i + 1;
-        humanState.action = 0; //# 0 add/modify an object, 1 (deprecated), 2 deletes an object, 3 deletes all objects
-        humanState.header.frame_id = semanticMapFrame;
 
-        std::cout << "visualizeHumans, i = " << i << " humanState.id = " << humanState.id << std::endl;
+//        std::cout << "visualizeHumans, i = " << i << " humanState.id = " << humanState.id << std::endl;
 
         hip_msgs::PoseVel humanPosVel = humanFilters[i].predictPos(humanFilters[i].getLatestUpdateTime());
         humanPosVelsNew.poseVels.push_back(humanPosVel);
+//std::cout << "rosnode, visualize humans, pos = " << humanPosVel.x << ", " << humanPosVel.y << std::endl;
         createLine(i,humanPosVel.x, humanPosVel.y, 0.0, humanPosVel.x, humanPosVel.y, 1.8, 0.0, 0.0, 1.0, 0.3, 1.0, humanState);
+        humanState.action = 0; //# 0 add/modify an object, 1 (deprecated), 2 deletes an object, 3 deletes all objects
+        humanState.header.frame_id = semanticMapFrame;
+	humanState.lifetime = ros::Duration(2.0);
         currentHumansState.markers.push_back(humanState);
         //humanState.publish (deleteAllMarker);
 
@@ -346,7 +376,7 @@ void rosNode::visualizeHumans() {
         markerSpeed.id = i + 1;
         markerSpeed.header.frame_id = semanticMapFrame;
 
-        std::cout << "visualizeHumans, i = " << i << " markerSpeed.id = " << markerSpeed.id << std::endl;
+//        std::cout << "visualizeHumans, i = " << i << " markerSpeed.id = " << markerSpeed.id << std::endl;
 
         currentHumansSpeed.markers.push_back(markerSpeed);
     }
