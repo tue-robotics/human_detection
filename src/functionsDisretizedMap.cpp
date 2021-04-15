@@ -1558,7 +1558,13 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
 
         createTubeHypothesis(globalTube, store, G, robot, tubesH, humanFilters, humanConsidered);
         // cout<<tubesH.size()<<endl;
-        hypotheses.hypotheses.push_back(hypothesisTemp);
+
+        int nOtherObjectsOfInterestConsidered = humanFilters.size() - 1; // cause person itself is not a target
+
+        for(int i = 0; i < nOtherObjectsOfInterestConsidered; i++)
+        {
+            hypotheses.hypotheses.push_back(hypothesisTemp);
+        }
         validateHypotheses(thisHuman.x, thisHuman.y, thisHuman.vx, thisHuman.vy, tubesH);
 
         // cout<<"debug3: "<<tubesH.size()<<endl;
