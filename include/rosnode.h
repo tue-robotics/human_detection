@@ -135,7 +135,7 @@ class rosNode {
 
         void publishTube(hip_msgs::tubes tube, hip_msgs::tubesH);
 
-        void publishHypotheses(hip_msgs::hypotheses hypotheses, std::string ns);
+        void publishHypotheses(hip_msgs::hypotheses hypotheses, std::string ns, KalmanFilter &humanFilter);
 
         void visualizeRobot();
 

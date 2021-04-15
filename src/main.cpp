@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 //    matrix A,H,P,Q,R,I; // Kalman filter matrices
 
 //    initializeKalman(A,H,P,Q,R,I,1/rate);
-    double tPrev = ros::Time::now().toSec();
+//    double tPrev = ros::Time::now().toSec();
 //    double dt;
 
     double rate = 15.0;
@@ -68,16 +68,14 @@ int main(int argc, char** argv)
         poseValid = (poseValid && rosNode.robotPose.pose.pose.position.y == rosNode.robotPose.pose.pose.position.y);
         poseValid = (poseValid && yawRobot == yawRobot);
 
-        if(poseValid) // TODO apply for all humans, publish hypotheses on namespace with separate human ID
+        if(poseValid)
         {
-            std::cout << "main, rosNode.humanFilters.size() = " << rosNode.humanFilters.size() << std::endl;
-
             for(unsigned int iHumans = 0; iHumans < rosNode.humanFilters.size(); iHumans++)
             {
                 hip_msgs::PoseVel humanPosVel = rosNode.humanFilters[iHumans].predictPos(rosNode.humanFilters[iHumans].getLatestUpdateTime() );
 
 
-                std::cout << "main, iHumans = " << iHumans << " humanPosVel.x = " << humanPosVel.x << " humanPosVel.y = " << humanPosVel.y << std::endl;
+//                std::cout << "main, iHumans = " << iHumans << "/" << rosNode.humanFilters.size() << " humanPosVel.x = " << humanPosVel.x << " humanPosVel.y = " << humanPosVel.y << std::endl;
 
                 map.updateHypotheses(//humanPosVel.x, humanPosVel.y, humanPosVel.vx, humanPosVel.vy, 
                                     rosNode.humanFilters, iHumans,
@@ -85,7 +83,7 @@ int main(int argc, char** argv)
                                     rosNode.semanticMapFrame, MARKER_LIFETIME);
 
                 std::string ns = "Hypotheses_Human" +  std::to_string(iHumans);
-                rosNode.publishHypotheses(map.hypotheses, ns);
+                rosNode.publishHypotheses(map.hypotheses, ns, rosNode.humanFilters[iHumans]);
                 map.readMap(staticMarkers,dynamicMarkers);
 
                 for(unsigned int iMarker = 0; iMarker < dynamicMarkers.markers.size(); iMarker++)
@@ -107,7 +105,7 @@ int main(int argc, char** argv)
             rosNode.visualizeMeasuredHumans();
             rosNode.visualizeRobot();
 
-            std::cout << "updateHypotheses, visualizations finished" << std::endl;    
+//            std::cout << "updateHypotheses, visualizations finished" << std::endl;    
             
             // WH: why wait?!
             ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1000.0)); // Call ROS stream and wait 1000 sec if no new measurement

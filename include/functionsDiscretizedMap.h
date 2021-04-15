@@ -108,7 +108,7 @@ class vectorFieldMap {
     void nextTube(int index,graph G,vector<int> &toTube, vector<double> &direction);
     void recursiveWalkA(vector<recursiveWalkStore> &store,vector<recursiveWalk> next,hip_msgs::tubes tube,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax);
     void validateHypotheses(double x, double y, double vx, double vy, vector<hip_msgs::tubes> tubesH);
-    void createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH, std::vector<KalmanFilter> humanFilters, int humanConsidered);
+    int createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH, std::vector<KalmanFilter> humanFilters, int humanConsidered);
     void borderTransform(hip_msgs::tubes &tube);
     void plotAOI(hip_msgs::singleTube tube, int index, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map);
     void walkConstant(hip_msgs::singleTube tube,double ds,double &x,double &y, double &C, double &p, double &D);

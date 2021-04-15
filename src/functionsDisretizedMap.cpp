@@ -1422,7 +1422,7 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
     }
 }
 
-void vectorFieldMap::createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH, std::vector<KalmanFilter> humanFilters, int humanConsidered) {
+int vectorFieldMap::createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH, std::vector<KalmanFilter> humanFilters, int humanConsidered) {
 hip_msgs::tubes tubeTemp; // bevat deel tubes (bv, bocht, kruising)
 // dir -> direction which can be +1 or -1
 //store: alle mogelijke paden die iemand kan lopen
@@ -1441,6 +1441,7 @@ for (int i = 0; i<store.size(); i++) {
     tubeTemp.tube.clear();
 }
 
+int nHypAdded = 0;
 for(int i = 0; i < humanFilters.size(); i++)
 {
     if(i == humanConsidered)
@@ -1464,8 +1465,13 @@ for(int i = 0; i < humanFilters.size(); i++)
     double dx = otherHuman.x - thisHuman.x;
     double dy = otherHuman.y - thisHuman.y;
     double vectorLength = sqrt( pow(dx, 2.0) + pow(dy, 2.0) );
-    double width = 0.5; // [m]
 
+    if(vectorLength < 0.2) // min distance between persons to set up hypotheses
+    {
+        continue;
+    }
+
+    double width = 0.5; // [m]
     double dxPerpendicular = -0.5*width/vectorLength*dy;
     double dyPerpendicular =  0.5*width/vectorLength*dx;
     
@@ -1490,11 +1496,14 @@ for(int i = 0; i < humanFilters.size(); i++)
     }
     
 
-    createGraph(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
-    createGraphShort(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
+//    createGraph(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
+//    createGraphShort(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
 //    borderTransform(tubeTemp); // required?
     tubesH.push_back(tubeTemp);
+    nHypAdded++;
 }
+
+return nHypAdded;
 
 }
 
@@ -1556,11 +1565,12 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
 
 
 
-        createTubeHypothesis(globalTube, store, G, robot, tubesH, humanFilters, humanConsidered);
+        int nOtherObjectsOfInterestConsidered = createTubeHypothesis(globalTube, store, G, robot, tubesH, humanFilters, humanConsidered);
         // cout<<tubesH.size()<<endl;
 
-        int nOtherObjectsOfInterestConsidered = humanFilters.size() - 1; // cause person itself is not a target
+//        int  = humanFilters.size() - 1; // cause person itself is not a target
 
+        std::cout << "Problems?! " <<  humanFilters.size() << " nOtherObjectsOfInterestConsidered = " << nOtherObjectsOfInterestConsidered  << std::endl;
         for(int i = 0; i < nOtherObjectsOfInterestConsidered; i++)
         {
             hypotheses.hypotheses.push_back(hypothesisTemp);

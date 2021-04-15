@@ -128,7 +128,10 @@ if __name__=="__main__":
 				Detection2.x = posX2 + 2.5; Detection2.y = posY2; Detection2.z = 0.2; Detection2.p = 0;
 
 				detectionsOut = detections()
+
 				detectionsOut.detections = [Detection, Detection2]
+#				detectionsOut.detections = [Detection]
+
 				detectionsOut.header.seq = cnt;
 				detectionsOut.header.frame_id = "/Jetson"
 				detectionsOut.header.stamp = rospy.Time.now()

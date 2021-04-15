@@ -92,6 +92,8 @@
 
     </group> <!-- ns="$(arg robotName)" -->
 
+    <node name="human_intention_prediction_process" pkg="human_intention_prediction" type="human_intention_prediction_process" output="screen"/>
+
     <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen">--> <!-- Default -->
     <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen" launch-prefix="xterm -e gdb -_-args">--> <!-- Debug with gdb-->
     <node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen"  launch-prefix="gdb -ex run --args">     <!-- Debug with gdb, not required to enter "run" to start execution -->
