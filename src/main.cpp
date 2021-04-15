@@ -79,9 +79,10 @@ int main(int argc, char** argv)
 
                 std::cout << "main, iHumans = " << iHumans << " humanPosVel.x = " << humanPosVel.x << " humanPosVel.y = " << humanPosVel.y << std::endl;
 
-                map.updateHypotheses(humanPosVel.x, humanPosVel.y, humanPosVel.vx, humanPosVel.vy, 
+                map.updateHypotheses(//humanPosVel.x, humanPosVel.y, humanPosVel.vx, humanPosVel.vy, 
+                                    rosNode.humanFilters, iHumans,
                                     rosNode.robotPose.pose.pose.position.x, rosNode.robotPose.pose.pose.position.y, yawRobot, rosNode.semanticMapFrame,
-                                    rosNode.semanticMapFrame);
+                                    rosNode.semanticMapFrame, MARKER_LIFETIME);
 
                 std::string ns = "Hypotheses_Human" +  std::to_string(iHumans);
                 rosNode.publishHypotheses(map.hypotheses, ns);
@@ -94,10 +95,10 @@ int main(int argc, char** argv)
                     dynamicMarkers.markers[iMarker] = marker;
                 }
                 
-                if (i%3==0) 
-                {
-                    rosNode.removeDynamicMap();
-                }
+//                if (i%3==0) 
+//                {
+//                    rosNode.removeDynamicMap();
+//                }
                 rosNode.setDynamicMap(dynamicMarkers);
                 rosNode.publishMap();
             }

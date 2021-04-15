@@ -68,6 +68,8 @@ void rosNode::createLine(   int i,                                  // ID
     marker.color.r = r;
     marker.color.g = g;
     marker.color.b = b;
+
+    marker.lifetime = ros::Duration(MARKER_LIFETIME);
 }
 
 /*void rosNode::updateFakeMeasurement(const hip_msgs::detection& humanPose) {
@@ -375,6 +377,7 @@ for(unsigned int i = 0; i < humanFilters.size(); i++)
         markerSpeed.ns = "wall";
         markerSpeed.id = i + 1;
         markerSpeed.header.frame_id = semanticMapFrame;
+        markerSpeed.lifetime = ros::Duration(MARKER_LIFETIME);
 
 //        std::cout << "visualizeHumans, i = " << i << " markerSpeed.id = " << markerSpeed.id << std::endl;
 
@@ -399,7 +402,6 @@ void rosNode::visualizeMeasuredHumans() {
         humanMarker.ns = "measuredHuman";
         humanMarker.header.frame_id = semanticMapFrame;
         humanMarker.action = visualization_msgs::Marker::ADD; //# 0 add/modify an object, 1 (deprecated), 2 deletes an object, 3 deletes all objects
-        // TODO add duration
 
         createLine(i,measurements[i].x, measurements[i].y, 0.0, measurements[i].x, measurements[i].y, 1.8, 0.5, 0.5, 0.5, 0.3, 1.0, humanMarker);
         humanMarkers.markers.push_back(humanMarker);

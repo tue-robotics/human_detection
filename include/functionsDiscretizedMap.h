@@ -20,13 +20,16 @@
 
 #include <visualization_msgs/MarkerArray.h>
 
+#include <KalmanFilter.h>
+
 using namespace std;
 using namespace arma;
 
 class vectorFieldMap {
     public:
     void initializeMap();
-    void updateHypotheses(double x, double y, double vx, double vy, double xRobot, double yRobot, double thetaRobot, string robotFrame, string mapFrame);
+    void updateHypotheses(//double x, double y, double vx, double vy, 
+    std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, double yRobot, double thetaRobot, string robotFrame, string mapFrame, double markerLifetime);
     void readMap(visualization_msgs::MarkerArray &staticMarkers,visualization_msgs::MarkerArray &dynamicMarkers);
     hip_msgs::tubes globalTube;
     hip_msgs::tubesH globalTubesH;
@@ -89,7 +92,7 @@ class vectorFieldMap {
     void linspace(double v1, double v2, int n, vector<double> &result);
     positionVars Fry(hip_msgs::singleTube tube,double I1,double I2,bool rel);
     void clearTube(visualization_msgs::MarkerArray map);
-    void plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel, bool sub, double r, double g, double b, double a, string ns, visualization_msgs::MarkerArray &map);
+    void plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel, bool sub, double r, double g, double b, double a, string ns, visualization_msgs::MarkerArray &map, double markerLifetime);
     void linesToTube(hip_msgs::lines &lines,hip_msgs::tubes &tubes,double id,TBCS TBC,bool marked);
     void createGraph(hip_msgs::tubes tube, graph &G);
     void findPointInTube(hip_msgs::tubes tubes, double x, double y, vector<int> &index);
@@ -105,9 +108,9 @@ class vectorFieldMap {
     void nextTube(int index,graph G,vector<int> &toTube, vector<double> &direction);
     void recursiveWalkA(vector<recursiveWalkStore> &store,vector<recursiveWalk> next,hip_msgs::tubes tube,graph G,vector<bool> &seenTubes,vector<bool> openTubes,double dMax);
     void validateHypotheses(double x, double y, double vx, double vy, vector<hip_msgs::tubes> tubesH);
-    void createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH);
+    void createTubeHypothesis(hip_msgs::tubes tube,vector<recursiveWalkStore> store,graph G,hip_msgs::robot robot, vector<hip_msgs::tubes> &tubesH, std::vector<KalmanFilter> humanFilters, int humanConsidered);
     void borderTransform(hip_msgs::tubes &tube);
-    void plotAOI(hip_msgs::singleTube tube, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map);
+    void plotAOI(hip_msgs::singleTube tube, int index, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map);
     void walkConstant(hip_msgs::singleTube tube,double ds,double &x,double &y, double &C, double &p, double &D);
     void addObject(hip_msgs::tubes &tube,hip_msgs::robot object, int TBCi);
     void walkToBorder(double &x,double &y,double dMax,hip_msgs::tubes tube,bool &endReached, double &dist, bool &border);
@@ -121,10 +124,10 @@ class vectorFieldMap {
     void newTubeSplit(hip_msgs::tubes tube,double zFixed,double zBorder,double zVar,double zVarEnd,double pVar,double df,double v1[2],hip_msgs::lines &lines,hip_msgs::lines &linesB);
     void walkStraight(double x1,double y1,double x2,double y2,hip_msgs::tubes tube,vector<int> tube_indices, vector<double> x_ind, vector<double> y_ind);
     void newTubeSplitMiddle(hip_msgs::tubes tube,double zFixed,double x[4],double y[4],int ind1,int ind2,double v1[2],double zBorder,hip_msgs::lines &lines,hip_msgs::lines &linesB);
-    void plotLine(double x1, double x2, double y1, double y2, int i,double r, double g, double b, double a, string ns, string frame, visualization_msgs::MarkerArray &map);
-    void plotRobot(hip_msgs::robot object, string robotFrame);
+    void plotLine(double x1, double x2, double y1, double y2, int i,double r, double g, double b, double a, string ns, string frame, visualization_msgs::MarkerArray &map, double markerLifetime);
+    void plotRobot(hip_msgs::robot object, string robotFrame, double markerLifetime);
     void validatePointInSubTube(hip_msgs::tube tube, double x, double y, double vx, double vy,vector<double> &prop);
-    void plotStandingTube(double x, double y, double radius, double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map, string mapFrame);
+    void plotStandingTube(double x, double y, double radius, double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map, string mapFrame, double markerLifetime);
 };
 
 #endif // HIP_FUNCTIONS_DISCRETIZED_MAP_H_
