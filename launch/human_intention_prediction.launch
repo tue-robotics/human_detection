@@ -73,21 +73,35 @@
         </node> <!-- AMCL-->
 
         <node name="napoleon_navigation" pkg="napoleon_navigation" type="napoleon_navigation" output="screen">
-            <param name="robot" value="$(arg robotName)" />
+<!--            <param name="robot" value="$(arg robotName)" />
             <param name="default_ropod_navigation_param_file" value ="$(find napoleon_navigation)/config/footprint_local_planner_params_ropod.yaml"/>
             <param name="default_ropod_load_navigation_param_file" value ="$(find napoleon_navigation)/config/footprint_local_planner_params_ropod_load.yaml"/>
-
-            <rosparam file="$(find ropod_navigation_test)/config/parameters/costmap_common_params.yaml" command="load" ns="local_costmap" />
+-->
+            <!--<rosparam file="$(find ropod_navigation_test)/config/parameters/costmap_common_params.yaml" command="load" ns="local_costmap" />
             <rosparam file="$(find ropod_navigation_test)/config/parameters/footprint_ropod.yaml" command="load" ns="local_costmap" />
             <rosparam file="$(find ropod_navigation_test)/config/parameters/local_costmap_params.yaml"  command="load"/>
             <rosparam file="$(find ropod_navigation_test)/config/parameters/teb_local_planner_params_ropod.yaml" command="load" />
-
+-->
             <!-- Remapping when load attached -->
             <!-- In Gazebo: -->
             <!--<remap from="/napoleon_navigation/cmd_vel" to="/load/cmd_vel"/> -->
             <!-- On ropod: -->
             <!--<remap from="/napoleon_navigation/cmd_vel" to="/ropod_tue_1/cmd_vel"/>-->
             <!--<remap from="odom" to="$(arg robotName)/load/odom"/>-->
+         <rosparam file="$(find ropod_navigation_test)/config/parameters/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find ropod_navigation_test)/config/parameters/footprint_ropod.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find ropod_navigation_test)/config/parameters/local_costmap_params.yaml"  command="load"/>
+        <rosparam file="$(find ropod_navigation_test)/config/parameters/teb_local_planner_params_ropod.yaml" command="load" />
+        <param name="default_ropod_navigation_param_file" value ="$(find napoleon_navigation)/config/footprint_local_planner_params_ropod.yaml"/>
+        <param name="default_ropod_load_navigation_param_file" value ="$(find napoleon_navigation)/config/footprint_local_planner_params_ropod_load.yaml"/>
+
+        <!-- In Gazebo: -->
+        <!--<remap from="/napoleon_navigation/cmd_vel" to="/$(arg robotName)/load/cmd_vel"/>-->
+        <remap from="/$(arg robotName)/napoleon_navigation/cmd_vel" to="/$(arg robotName)/cmd_vel"/>
+        <!-- On ropod: -->
+        <!--<remap from="/napoleon_navigation/cmd_vel" to="/ropod_tue_1/cmd_vel"/>-->
+        <remap from="/napoleon_navigation/scan" to="/$(arg robotName)/$(arg laser1_name)/scan"/>
+
         </node> <!-- napoleon_navigation -->
 
     </group> <!-- ns="$(arg robotName)" -->
@@ -102,3 +116,4 @@
         <param name="robotName" type="string" value="$(arg robotName)"/>
     </node> <!-- human_intention_prediction -->
 </launch>
+
