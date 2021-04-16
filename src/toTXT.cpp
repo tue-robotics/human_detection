@@ -14,7 +14,7 @@
 
 using namespace std;
 
-std::string storeDir = "/home/wouter/Pictures/testData/";
+std::string storeDir = "/home/ropod/Pictures/testData/";
 
 hip_msgs::hypotheses hypothesesList;
 hip_msgs::PoseVel humanPosVel;
@@ -44,9 +44,10 @@ int main(int argc, char** argv)
     double time = stamp.toSec();
     std::string timeString = std::to_string( (int) time);
 
-    std::cout << "toText: time = " << time << " timestring = " << timeString << std::endl;
+  //  std::cout << "toText: time = " << time << " timestring = " << timeString << std::endl;
 
     fileP0.open(storeDir + "hypothesesP0AOILRC" + timeString + ".csv");
+//std::cout <<"file open = " << fileP0.is_open() << std::endl;
     fileP0L.open(storeDir + "hypothesesP0AOIL" + timeString + ".csv");
     fileP0R.open(storeDir + "hypothesesP0AOIR" + timeString + ".csv");
     fileP0C.open(storeDir + "hypothesesP0AOIC" + timeString + ".csv");
@@ -59,7 +60,7 @@ int main(int argc, char** argv)
     while(ros::ok())
     {      
         ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1000.0)); // Call ROS stream and wait 1000 sec if no new measurement
-std::cout << "toTxt test" << std::endl;
+//std::cout << "toTxt test" << std::endl;
         int person;
         if(hypothesesList.ns == "Hypotheses_Human0")
         {
