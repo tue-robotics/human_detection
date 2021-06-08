@@ -14,6 +14,8 @@ void rosNode::initialize() {
     hypothesesTop = n.advertise<hip_msgs::hypotheses>("/HIP/hypotheses",3);
     deleteAllMarker.action = visualization_msgs::Marker::DELETEALL;
 
+    processingTimeTop = n.advertise<std_msgs::Duration>("/HIP/ProcessingTime",3);
+
     n.getParam("/human_intention_prediction/a",iMax);
     n.getParam("/human_intention_prediction/real",real);
     n.getParam("/human_intention_prediction/robotName",robotName);
@@ -332,6 +334,15 @@ void rosNode::publishHypotheses(hip_msgs::hypotheses hypotheses, std::string ns,
 void rosNode::publishHumanPV() {
     humanPV.publish (humanPosVels);
 }
+
+void rosNode::publishProcessingTime(ros::Duration dt) {
+
+    std_msgs::Duration dt_msgs;
+    dt_msgs.data = dt;
+
+    processingTimeTop.publish (dt_msgs);
+}
+
 
 void rosNode::visualizeHumans() {
  

@@ -20,6 +20,7 @@
 
 
 #include <visualization_msgs/MarkerArray.h>
+#include <std_msgs/Duration.h>
 
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Pose.h>
@@ -28,17 +29,23 @@
 using namespace std;
 tf2_ros::Buffer tfBuffer;
 
-std::string storeDir = "/home/ropod/Pictures/testData/";
+std::string storeDir = "/home/wouter/Pictures/testData/";
 
 hip_msgs::hypotheses hypothesesList;
 hip_msgs::PoseVel humanPosVel;
 geometry_msgs::PoseWithCovarianceStamped robotPose;
 string semanticMapFrame;
 
+std_msgs::Duration dt;
+
 void updateRobotPose(const geometry_msgs::PoseWithCovarianceStamped& msg);
 
 void update(const hip_msgs::hypotheses& hypo) {
     hypothesesList = hypo;
+} 
+
+void updateDt(const std_msgs::Duration& dt_in) {
+    dt = dt_in;
 } 
 /*void state(const hip_msgs::PoseVel& humanPosVelTemp) {
     humanPosVel = humanPosVelTemp;
@@ -53,7 +60,7 @@ int main(int argc, char** argv)
 
     ros::init(argc, argv, "HIP");
     ros::NodeHandle n;
-    ros::Subscriber hypotheses,human,subRobotPose;
+    ros::Subscriber hypotheses,human,subRobotPose, subDt;
 
 //    tf2_ros::Buffer tfBuffer;
         //tf2_ros::TransformListener* pTfListener;//(tfBuffer);
@@ -63,9 +70,9 @@ int main(int argc, char** argv)
     hypotheses = n.subscribe("/HIP/hypotheses",1000, update);
 //    human = n.subscribe("/HIP/trackedHuman",1000, state);
     subRobotPose = n.subscribe("/ropod_tue_2/amcl_pose", 1000, &updateRobotPose);
-    
+    subDt = n.subscribe("/HIP/ProcessingTime",1000, updateDt);
 
-    std::ofstream fileP0,fileP0R,fileP0L,fileP0C;
+    std::ofstream fileP0,fileP0R,fileP0L,fileP0C, fileDt;
     std::ofstream fileP1,fileP1R,fileP1L,fileP1C;
     std::ofstream fileRobotPose;
 
@@ -83,6 +90,7 @@ int main(int argc, char** argv)
     fileP0L.open(storeDir + "hypothesesP0AOIL" + timeString + ".csv");
     fileP0R.open(storeDir + "hypothesesP0AOIR" + timeString + ".csv");
     fileP0C.open(storeDir + "hypothesesP0AOIC" + timeString + ".csv");
+    fileDt.open(storeDir + "processingTime" + timeString + ".csv");
 
     fileP1.open(storeDir + "hypothesesP1AOILRC" + timeString + ".csv");
     fileP1L.open(storeDir + "hypothesesP1AOIL" + timeString + ".csv");
@@ -103,7 +111,7 @@ int main(int argc, char** argv)
 
 
             
-        std::cout << "hypothesesList.ns = " << hypothesesList.ns << " hypothesesList.timestamp = " << hypothesesList.timestamp - t0 << std::endl;
+//        std::cout << "hypothesesList.ns = " << hypothesesList.ns << " hypothesesList.timestamp = " << hypothesesList.timestamp - t0 << std::endl;
         if(hypothesesList.ns == "Hypotheses_Human0")
         {
             person = 0;
@@ -111,6 +119,8 @@ int main(int argc, char** argv)
             fileP0L << setprecision(35) << hypothesesList.timestamp;
             fileP0R << setprecision(35) << hypothesesList.timestamp;
             fileP0C << setprecision(35) << hypothesesList.timestamp;
+
+            fileDt << setprecision(35) << hypothesesList.timestamp;
         } else if (hypothesesList.ns == "Hypotheses_Human1") {
             person = 1;
             fileP1 << setprecision(35) << hypothesesList.timestamp;
@@ -130,6 +140,7 @@ int main(int argc, char** argv)
                    << hypothesesList.humanPosVel.vx << "," 
                    << hypothesesList.humanPosVel.vy;
 
+            fileDt << ", " << dt.data.sec + dt.data.nsec*1e-9 << "\n";
             // std::cout << "Pos vel info p0= " << hypothesesList.humanPosVel.x << "," 
                 //    << hypothesesList.humanPosVel.y << "," 
                 //    << hypothesesList.humanPosVel.vx << "," 
@@ -183,8 +194,8 @@ int main(int argc, char** argv)
                 fileP1 << "," << hypothesesList.hypotheses[i].index;
                 fileP1 << "," << hypothesesList.hypotheses[i].p;
 
-                std::cout << "index = " << hypothesesList.hypotheses[i].index;
-                std::cout << " prob = " << hypothesesList.hypotheses[i].p;
+//                std::cout << "index = " << hypothesesList.hypotheses[i].index;
+//                std::cout << " prob = " << hypothesesList.hypotheses[i].p;
 
                 if(hypothesesList.hypotheses[i].pSub.size() > 0)
                 {
@@ -192,9 +203,9 @@ int main(int argc, char** argv)
                     fileP1R << "," << hypothesesList.hypotheses[i].index << "," << hypothesesList.hypotheses[i].pSub[1];
                     fileP1C << "," << hypothesesList.hypotheses[i].index << "," << hypothesesList.hypotheses[i].pSub[2];
 
-                    std::cout << "index = " << hypothesesList.hypotheses[i].index;
-                    std::cout << " lrc prob = " << hypothesesList.hypotheses[i].pSub[0] << " "
-                     << hypothesesList.hypotheses[i].pSub[1] << " " << hypothesesList.hypotheses[i].pSub[2] << std::endl;
+//                    std::cout << "index = " << hypothesesList.hypotheses[i].index;
+//                    std::cout << " lrc prob = " << hypothesesList.hypotheses[i].pSub[0] << " "
+//                     << hypothesesList.hypotheses[i].pSub[1] << " " << hypothesesList.hypotheses[i].pSub[2] << std::endl;
                 }
             }
 
@@ -221,6 +232,7 @@ int main(int argc, char** argv)
     fileP0R.close();
     fileP0L.close();
     fileP0C.close();
+    fileDt.close();
 
     fileP1.close();
     fileP1R.close();

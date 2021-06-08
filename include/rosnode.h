@@ -30,6 +30,8 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 
+#include <std_msgs/Duration.h>
+
 #include "associationMatrix.h"
 #include "KalmanFilter.h"
 
@@ -70,6 +72,7 @@ class rosNode {
         ros::Publisher tubeHTop;
         ros::Publisher hypothesesTop;
         ros::Publisher humansSpeed;
+        ros::Publisher processingTimeTop;
 
         ros::Subscriber subHuman;
         ros::Subscriber subRobotPose;
@@ -111,6 +114,8 @@ class rosNode {
         void visualizeHumans();
 
         void publishTube();
+
+        void publishProcessingTime(ros::Duration dt);
 
         void visualizeMeasuredHumans();
 

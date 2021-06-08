@@ -4,7 +4,8 @@
 
     <!--Static transform publishers, x y z yaw pitch roll frame_id child_frame_id period_in_ms-->
     <node pkg="tf" type="static_transform_publisher" name="map2semanticMap" args="1.8 0.4 0 -0.23 0 0 /map /semanticMap 100" />
-    <node pkg="tf" type="static_transform_publisher" name="robot2kinect" args="0.33 -0.01 0 0 -0.24 0 /$(arg robotName)/base_link /Jetson 100" />
+    <!--<node pkg="tf" type="static_transform_publisher" name="robot2kinect" args="0.33 -0.01 0 0 -0.24 0 /$(arg robotName)/base_link /Jetson 100" />
+-->
 
     <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen">--> <!-- Default -->
     <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen" launch-prefix="xterm -e gdb -_-args">--> <!-- Debug with gdb-->
@@ -20,57 +21,6 @@
     <group ns="$(arg robotName)">
         <!-- Run the map server -->
         <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
-
-        <!--- Run AMCL -->
-        <node pkg="amcl" type="amcl" name="amcl">
-            <remap from="scan" to="/$(arg robotName)/$(arg laser1_name)/scan"/>
-
-            <!--- Odometery model parameters  -->
-            <param name="odom_model_type" value="omni"/>
-            <param name="odom_alpha1" value="7.0"/>
-            <param name="odom_alpha2" value="5.0"/>
-            <param name="odom_alpha3" value="5.0"/>
-            <param name="odom_alpha4" value="5.0"/>
-            <param name="odom_alpha5" value="7.0"/>
-            <param name="odom_frame_id" value="$(arg robotName)/odom"/>
-            <param name="base_frame_id" value="$(arg robotName)/base_link"/>
-            <param name="global_frame_id" value="/map"/>
-
-            <!-- Overall filter parameters -->
-            <param name="min_particles" value="200"/>
-            <param name="max_particles" value="1000"/>
-            <param name="kld_err" value="0.01"/>
-            <param name="kld_z" value="0.99"/>
-            <param name="update_min_d" value="0.05"/>
-            <param name="update_min_a" value="0.01"/>
-            <param name="resample_interval" value="2"/>
-            <param name="transform_tolerance" value="0.1" />
-            <param name="recovery_alpha_slow" value="0.0"/>
-            <param name="recovery_alpha_fast" value="0.0"/>
-            <param name="gui_publish_rate" value="-1"/>
-            <param name="use_map_topic" value="true"/>
-            <param name="first_map_only" value="true"/>
-
-            <!--Laser model parameters -->
-            <param name="laser_min_range" value="0.04"/>
-            <param name="laser_max_range" value="5.0"/>
-            <param name="laser_max_beams" value="30"/>
-            <param name="laser_z_hit" value="0.95"/>
-            <param name="laser_z_short" value="0.01"/>
-            <param name="laser_z_max" value="0.05"/>
-            <param name="laser_z_rand" value="0.05"/>
-            <param name="laser_sigma_hit" value="0.2"/>
-            <param name="laser_lambda_short" value="0.1"/>
-            <param name="laser_likelihood_max_dist" value="1.0"/>
-            <param name="laser_model_type" value="likelihood_field"/>
-
-            <!-- initial pose of the robot in TU/e hallway-->
-            <param name="initial_pose_x" value="4.8"/>
-            <param name="initial_pose_y" value="8.7"/>
-            <param name="initial_pose_a" value="-1.54"/> 
-
-            <remap from="amcl_pose" to="/$(arg robotName)/amcl_pose"/>
-        </node> <!-- AMCL-->
 
         <node name="napoleon_navigation" pkg="napoleon_navigation" type="napoleon_navigation" output="screen">
 <!--            <param name="robot" value="$(arg robotName)" />
@@ -88,7 +38,7 @@
             <!-- On ropod: -->
             <!--<remap from="/napoleon_navigation/cmd_vel" to="/ropod_tue_1/cmd_vel"/>-->
             <!--<remap from="odom" to="$(arg robotName)/load/odom"/>-->
-         <rosparam file="$(find ropod_navigation_test)/config/parameters/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find ropod_navigation_test)/config/parameters/costmap_common_params.yaml" command="load" ns="local_costmap" />
         <rosparam file="$(find ropod_navigation_test)/config/parameters/footprint_ropod.yaml" command="load" ns="local_costmap" />
         <rosparam file="$(find ropod_navigation_test)/config/parameters/local_costmap_params.yaml"  command="load"/>
         <rosparam file="$(find ropod_navigation_test)/config/parameters/teb_local_planner_params_ropod.yaml" command="load" />
@@ -108,11 +58,56 @@
 
     <node name="human_intention_prediction_process" pkg="human_intention_prediction" type="human_intention_prediction_process" output="screen"/>
 
-    <node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen"> <!-- Default -->
+    <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen">--> <!-- Default -->
     <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen" launch-prefix="xterm -e gdb -_-args">--> <!-- Debug with gdb-->
-    <!--<node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen"  launch-prefix="gdb -ex run -_-args">-->     <!-- Debug with gdb, not required to enter "run" to start execution -->
+    <node name="human_intention_prediction" pkg="human_intention_prediction" type="human_intention_prediction" output="screen"  launch-prefix="gdb -ex run --args">     <!-- Debug with gdb, not required to enter "run" to start execution -->
         <rosparam file="$(find human_intention_prediction)/map/map.yaml"/>
-        <param name="real" type="bool" value="$(env ROBOT_REAL)"/>
+        <param name="real" type="bool" value="true"/>
         <param name="robotName" type="string" value="$(arg robotName)"/>
     </node> <!-- human_intention_prediction -->
+
+
+    <!-- replay bag file -->
+    <!--<param name="/use_sim_time" value="true" />-->
+    <!--<arg name="bagFile" default="/media/wouter/Elements/WH/Human_Intention_Estimation/data/2021-04-16_New_data_for_paper/basData/2021-04-16-13-17-28.bag"/>-->
+    <arg name="bagFile" default="/media/wouter/Elements/WH/Human_Intention_Estimation/data/2021-04-16_New_data_for_paper/bobTest/2021-04-16-10-36-42.bag"/>
+    <!--<arg name="bagFile" default="/media/wouter/Elements/WH/Human_Intention_Estimation/data/2021-04-16_New_data_for_paper/rubenWouterData2/2021-04-16-15-21-45.bag"/>-->
+    <!--<arg name="bagFile" default="/media/wouter/Elements/WH/Human_Intention_Estimation/data/2021-04-16_New_data_for_paper/drivingTest2/2021-04-16-16-36-07.bag"/>-->
+    <!--<arg name="bagFile" default="/media/wouter/Elements/WH/Human_Intention_Estimation/data/2021-04-16_New_data_for_paper/drivingTest/2021-04-16-16-27-02.bag"/>-->
+    
+
+   <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg bagFile) --topics /Jetson/cameraDetections /ropod_tue_2/amcl/parameter_descriptions /ropod_tue_2/amcl/parameter_updates /ropod_tue_2/amcl_pose /ropod_tue_2/laser/diagnostics /ropod_tue_2/laser/info/parameter_descriptions /ropod_tue_2/laser/info/parameter_updates /ropod_tue_2/laser/scan /ropod_tue_2/laser/scan_filtered /ropod_tue_2/load/odom /ropod_tue_2/map /ropod_tue_2/map_metadata /ropod_tue_2/napoleon_navigation/parameter_descriptions /ropod_tue_2/napoleon_navigation/parameter_updates /ropod_tue_2/odom /ropod_tue_2/odom_incomplete /ropod_tue_2/particlecloud /ropod_tue_2/ropod_low_level_control/dockingFeedback /tf"/>
 </launch>
+
+<!--/HIP/dynamicMap
+/HIP/humansSpeed
+/HIP/humansState
+/HIP/hypotheses
+/HIP/measuredHumans
+/HIP/semanticMap
+/HIP/trackedHumans
+/HIP/tubes
+/HIP/tubesH
+/HIP/virtualRobot
+/Jetson/cameraDetections
+/clock
+/ropod_tue_2/amcl/parameter_descriptions
+/ropod_tue_2/amcl/parameter_updates
+/ropod_tue_2/amcl_pose
+/ropod_tue_2/laser/diagnostics
+/ropod_tue_2/laser/info/parameter_descriptions
+/ropod_tue_2/laser/info/parameter_updates
+/ropod_tue_2/laser/scan
+/ropod_tue_2/laser/scan_filtered
+/ropod_tue_2/load/odom
+/ropod_tue_2/map
+/ropod_tue_2/map_metadata
+/ropod_tue_2/napoleon_navigation/parameter_descriptions
+/ropod_tue_2/napoleon_navigation/parameter_updates
+/ropod_tue_2/odom
+/ropod_tue_2/odom_incomplete
+/ropod_tue_2/particlecloud
+/ropod_tue_2/ropod_low_level_control/dockingFeedback
+/rosout
+/rosout_agg
+/tf-->

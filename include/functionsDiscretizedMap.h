@@ -20,6 +20,8 @@
 
 #include <visualization_msgs/MarkerArray.h>
 
+#include <std_msgs/Duration.h>
+
 #include <KalmanFilter.h>
 
 using namespace std;
@@ -28,7 +30,7 @@ using namespace arma;
 class vectorFieldMap {
     public:
     void initializeMap();
-    void updateHypotheses(//double x, double y, double vx, double vy, 
+    ros::Duration updateHypotheses(//double x, double y, double vx, double vy, 
     std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, double yRobot, double thetaRobot, string robotFrame, string mapFrame, double markerLifetime);
     void readMap(visualization_msgs::MarkerArray &staticMarkers,visualization_msgs::MarkerArray &dynamicMarkers);
     hip_msgs::tubes globalTube;

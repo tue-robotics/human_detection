@@ -1,8 +1,8 @@
 #include <functionsDiscretizedMap.h>
 #include <functions.h>
 
-#define CONSIDER_ALTERNATIVES
-#define N_STREAMLINES_TUBES         7
+//#define CONSIDER_ALTERNATIVES
+#define N_STREAMLINES_TUBES         2
 
 void vectorFieldMap::pointsToLine(hip_msgs::lines &lines) {
 for (int i=0;i<2;i++) {
@@ -1377,7 +1377,7 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
     hypotheses.hypotheses.push_back(hypothesisTemp);
     // cout<<hypotheses.hypotheses.size();
 
-    std::cout << "Calc likelihood, hypotheses.hypotheses.size() = " << hypotheses.hypotheses.size() << std::endl;
+//    std::cout << "Calc likelihood, hypotheses.hypotheses.size() = " << hypotheses.hypotheses.size() << std::endl;
 
     for (int i = 0; i<hypotheses.hypotheses.size()-1; i++) {
         // calcGradient(globalTube.tube[hypotheses.hypotheses[i].path[0]].main, x, y, u, v);
@@ -1429,7 +1429,7 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
                 hypotheses.hypotheses[i].pSub.push_back(0.0);
             }
         }
-        std::cout << " For hyp " << i << " prob = " << hypotheses.hypotheses[i].p << std::endl;
+//        std::cout << " For hyp " << i << " prob = " << hypotheses.hypotheses[i].p << std::endl;
     }
 }
 
@@ -1473,15 +1473,15 @@ for(int i = 0; i < humanFilters.size(); i++)
     TBCS TBC;
     TBC.i = -1;
 
-    std::cout << "adding extra hyp for human " << humanConsidered << " pose info = " << thisHuman.x << ", " 
-    << thisHuman.y << ", " << otherHuman.x << ", " << otherHuman.y << std::endl;
+//    std::cout << "adding extra hyp for human " << humanConsidered << " pose info = " << thisHuman.x << ", " 
+//    << thisHuman.y << ", " << otherHuman.x << ", " << otherHuman.y << std::endl;
 
     // perpendicular direction
     double dx = otherHuman.x - thisHuman.x;
     double dy = otherHuman.y - thisHuman.y;
     double vectorLength = sqrt( pow(dx, 2.0) + pow(dy, 2.0) );
 
-    std::cout << "vectorLength = " << vectorLength<< std::endl;
+//    std::cout << "vectorLength = " << vectorLength<< std::endl;
 
     if(vectorLength < 0.2) // min distance between persons to set up hypotheses
     {
@@ -1516,9 +1516,9 @@ for(int i = 0; i < humanFilters.size(); i++)
 //    createGraphShort(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
 //    borderTransform(tubeTemp); // required?
 
-std::cout << "Going to add person to person hyp, tubesH.size() = " << tubesH.size() << "." << std::endl;
+//std::cout << "Going to add person to person hyp, tubesH.size() = " << tubesH.size() << "." << std::endl;
     tubesH.push_back(tubeTemp);
-    std::cout << "Added person to person hyp, tubesH.size() = " << tubesH.size() << "." << std::endl;
+//    std::cout << "Added person to person hyp, tubesH.size() = " << tubesH.size() << "." << std::endl;
     nHypAdded++;
 }
 #endif // CONSIDER_ALTERNATIVES
@@ -1527,9 +1527,11 @@ return nHypAdded;
 
 }
 
-void vectorFieldMap::updateHypotheses(//double x, double y, double vx, double vy, 
+ros::Duration vectorFieldMap::updateHypotheses(//double x, double y, double vx, double vy, 
 std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, double yRobot, double thetaRobot, string robotFrame, string mapFrame, double markerLifetime) {
 
+    ros::Duration dtProcessing;
+    ros::Time tProcessingStart = ros::Time::now();
     // give list of all persons and id of person which is considered atm to derive human position
 
     robot.x = xRobot;
@@ -1603,7 +1605,7 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
         }
 #endif // CONSIDER_ALTERNATIVES
 
-        std::cout << "About to validate hypotheses. hypotheses.hypotheses.size = " << hypotheses.hypotheses.size() << "tubesH.size() = " << tubesH.size()<< std::endl;
+//        std::cout << "About to validate hypotheses. hypotheses.hypotheses.size = " << hypotheses.hypotheses.size() << "tubesH.size() = " << tubesH.size()<< std::endl;
 
         validateHypotheses(thisHuman.x, thisHuman.y, thisHuman.vx, thisHuman.vy, tubesH);
 
@@ -1672,6 +1674,8 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
             }
         }
 
+        dtProcessing = ros::Time::now() - tProcessingStart;
+
         // cout<<pTotPlot<<endl;
         double pTotPlot=0;
         for (int i=0;i<hypotheses.hypotheses.size();i++) {
@@ -1717,6 +1721,7 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
 
     }
 
+    return dtProcessing;
 }
 
 int vectorFieldMap::findPGlobalInTube(hip_msgs::tubes tube, double p) {
