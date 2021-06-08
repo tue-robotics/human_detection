@@ -57,7 +57,7 @@ hip_msgs::PoseVel KalmanFilter::predictPos(double refTime)
     // TODO incorporate with update step
     A_[0][2] = dt;
     A_[1][3] = dt;
-    double sigma_a = 5.0; // TODO make configurable?
+    double sigma_a = 10.0; // TODO make configurable?
 
 /*    matrix Q;
     Q.push_back({0.5*dt*dt*sigma_a, 0.0, 0.0, 0.0});

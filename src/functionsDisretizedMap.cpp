@@ -1,6 +1,9 @@
 #include <functionsDiscretizedMap.h>
 #include <functions.h>
 
+#define CONSIDER_ALTERNATIVES
+#define N_STREAMLINES_TUBES         7
+
 void vectorFieldMap::pointsToLine(hip_msgs::lines &lines) {
 for (int i=0;i<2;i++) {
     lines.line[i].a = lines.line[i].y[1] - lines.line[i].y[0];
@@ -377,7 +380,9 @@ void vectorFieldMap::plotStandingTube(double x, double y, double radius, double 
     marker.points.clear();
 }
 
-void vectorFieldMap::plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map, double markerLifetime) {
+void vectorFieldMap::plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel,
+                                bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map,
+                                double markerLifetime) {
     vector<double> var;
     if (tube.curved) {
         linspace(0.0,tube.theta_tot,n1,var);
@@ -474,7 +479,8 @@ void vectorFieldMap::plotLine(  double x1, double x2, double y1, double y2,
     marker.points.clear();
 } 
 
-void vectorFieldMap::plotAOI(hip_msgs::singleTube tube, int index, int n, int subID, double a, string ns,double p,visualization_msgs::MarkerArray &map) {
+void vectorFieldMap::plotAOI(hip_msgs::singleTube tube, int index, int n, int subID, double a, string ns,double p,
+                                visualization_msgs::MarkerArray &map) {
     visualization_msgs::Marker marker;
     marker.header.frame_id = "/semanticMap";
     //marker.header.frame_id = "/map";
@@ -510,6 +516,7 @@ void vectorFieldMap::plotAOI(hip_msgs::singleTube tube, int index, int n, int su
             ySum += O.y;
         }
     }
+    marker.ns = ns;
     marker.id = subID;
     map.markers.push_back(marker);
 
@@ -1370,6 +1377,8 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
     hypotheses.hypotheses.push_back(hypothesisTemp);
     // cout<<hypotheses.hypotheses.size();
 
+    std::cout << "Calc likelihood, hypotheses.hypotheses.size() = " << hypotheses.hypotheses.size() << std::endl;
+
     for (int i = 0; i<hypotheses.hypotheses.size()-1; i++) {
         // calcGradient(globalTube.tube[hypotheses.hypotheses[i].path[0]].main, x, y, u, v);
         xTemp = x;
@@ -1402,6 +1411,7 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
     // lTot = 1.0;
     int count = 0;
     for (int i = 0; i<hypotheses.hypotheses.size()-1; i++) {
+        
         if (tubesH[i].tube[0].subTubes0.size()>0) {
             hypotheses.hypotheses[i].pSub.clear();
             for (int j = 0; j<3; j++) {
@@ -1419,6 +1429,7 @@ void vectorFieldMap::validateHypotheses(double x, double y, double vx, double vy
                 hypotheses.hypotheses[i].pSub.push_back(0.0);
             }
         }
+        std::cout << " For hyp " << i << " prob = " << hypotheses.hypotheses[i].p << std::endl;
     }
 }
 
@@ -1437,11 +1448,12 @@ for (int i = 0; i<store.size(); i++) {
     addObject(tubeTemp,robot,0); // linksom
     addObject(tubeTemp,robot,1); // rechtsom
     addObject(tubeTemp,robot,2);  // tegen robot aan (wordt toegevoegd in tubetemp)
-    tubesH.push_back(tubeTemp); // zet hier een extra
+    tubesH.push_back(tubeTemp); // zet hier 1 extra
     tubeTemp.tube.clear();
 }
 
 int nHypAdded = 0;
+#ifdef CONSIDER_ALTERNATIVES
 for(int i = 0; i < humanFilters.size(); i++)
 {
     if(i == humanConsidered)
@@ -1461,10 +1473,15 @@ for(int i = 0; i < humanFilters.size(); i++)
     TBCS TBC;
     TBC.i = -1;
 
+    std::cout << "adding extra hyp for human " << humanConsidered << " pose info = " << thisHuman.x << ", " 
+    << thisHuman.y << ", " << otherHuman.x << ", " << otherHuman.y << std::endl;
+
     // perpendicular direction
     double dx = otherHuman.x - thisHuman.x;
     double dy = otherHuman.y - thisHuman.y;
     double vectorLength = sqrt( pow(dx, 2.0) + pow(dy, 2.0) );
+
+    std::cout << "vectorLength = " << vectorLength<< std::endl;
 
     if(vectorLength < 0.2) // min distance between persons to set up hypotheses
     {
@@ -1494,14 +1511,17 @@ for(int i = 0; i < humanFilters.size(); i++)
     {
         tubeTemp.tube[j].main.dir = 1;
     }
-    
 
 //    createGraph(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
 //    createGraphShort(tubeTemp, G); // Niet zeker of deze 2 regels nodig zijn
 //    borderTransform(tubeTemp); // required?
+
+std::cout << "Going to add person to person hyp, tubesH.size() = " << tubesH.size() << "." << std::endl;
     tubesH.push_back(tubeTemp);
+    std::cout << "Added person to person hyp, tubesH.size() = " << tubesH.size() << "." << std::endl;
     nHypAdded++;
 }
+#endif // CONSIDER_ALTERNATIVES
 
 return nHypAdded;
 
@@ -1554,6 +1574,11 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
         for (int i = 0; i< store.size();i++) {
             skip = false;
 
+            if (store[i].index == 30)
+            {
+                skip = true;
+            }
+
             if (!skip) {
                 hypothesisTemp.path = store[i].path;
                 hypothesisTemp.pStore = store[i].pStore;
@@ -1563,18 +1588,23 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
             }
         }
 
-
-
         int nOtherObjectsOfInterestConsidered = createTubeHypothesis(globalTube, store, G, robot, tubesH, humanFilters, humanConsidered);
         // cout<<tubesH.size()<<endl;
 
 //        int  = humanFilters.size() - 1; // cause person itself is not a target
-
-        std::cout << "Problems?! " <<  humanFilters.size() << " nOtherObjectsOfInterestConsidered = " << nOtherObjectsOfInterestConsidered  << std::endl;
+#ifdef CONSIDER_ALTERNATIVES
+        std::cout << " humanFilters.size() = " <<  humanFilters.size() << " nOtherObjectsOfInterestConsidered = " << nOtherObjectsOfInterestConsidered  << std::endl;
         for(int i = 0; i < nOtherObjectsOfInterestConsidered; i++)
         {
+            std::cout << "hypothesisTemp index = " << hypothesisTemp.index << std::endl;
+            //hypothesisTemp.index = hypotheses.hypotheses.size(); // TODO proper indexing, quick fix for now
+            hypothesisTemp.index = 30+i; // TODO proper indexing, quick fix for now
             hypotheses.hypotheses.push_back(hypothesisTemp);
         }
+#endif // CONSIDER_ALTERNATIVES
+
+        std::cout << "About to validate hypotheses. hypotheses.hypotheses.size = " << hypotheses.hypotheses.size() << "tubesH.size() = " << tubesH.size()<< std::endl;
+
         validateHypotheses(thisHuman.x, thisHuman.y, thisHuman.vx, thisHuman.vy, tubesH);
 
         // cout<<"debug3: "<<tubesH.size()<<endl;
@@ -1599,7 +1629,46 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
                         }
                     }
                 }
-                plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].main, hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMap", hypotheses.hypotheses[i].pStore, dynamicMap);
+                plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].main, hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMapMain", hypotheses.hypotheses[i].pStore, dynamicMap);
+/*
+                std::cout << "subtubeSizes = " 
+                << globalTube.tube[hypotheses.hypotheses[i].index].subTubesB0.size() << ", "
+                << globalTube.tube[hypotheses.hypotheses[i].index].subTubesB1.size() << ", "
+                << globalTube.tube[hypotheses.hypotheses[i].index].subTubesB2.size() << ", "
+                << globalTube.tube[hypotheses.hypotheses[i].index].subTubes0.size() << ", "
+                << globalTube.tube[hypotheses.hypotheses[i].index].subTubes1.size() << ", "
+                << globalTube.tube[hypotheses.hypotheses[i].index].subTubes2.size();
+                
+                for(int iTest = 0; iTest < globalTube.tube[hypotheses.hypotheses[i].index].subTubesB0.size(); iTest++)
+                {
+                    plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].subTubesB0[iTest], hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMapB0", hypotheses.hypotheses[i].pStore, dynamicMap);
+                }
+
+                for(int iTest = 0; iTest < globalTube.tube[hypotheses.hypotheses[i].index].subTubesB1.size(); iTest++)
+                {
+                    plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].subTubesB1[iTest], hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMapB1", hypotheses.hypotheses[i].pStore, dynamicMap);
+                }
+
+                    for(int iTest = 0; iTest < globalTube.tube[hypotheses.hypotheses[i].index].subTubesB2.size(); iTest++)
+                {
+                    plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].subTubesB2[iTest], hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMapB2", hypotheses.hypotheses[i].pStore, dynamicMap);
+                }
+
+                for(int iTest = 0; iTest < globalTube.tube[hypotheses.hypotheses[i].index].subTubes0.size(); iTest++)
+                {
+                    plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].subTubes0[iTest], hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMap0", hypotheses.hypotheses[i].pStore, dynamicMap);
+                }
+
+                for(int iTest = 0; iTest < globalTube.tube[hypotheses.hypotheses[i].index].subTubes1.size(); iTest++)
+                {
+                    plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].subTubes1[iTest], hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMap1", hypotheses.hypotheses[i].pStore, dynamicMap);
+                }
+
+                for(int iTest = 0; iTest < globalTube.tube[hypotheses.hypotheses[i].index].subTubes2.size(); iTest++)
+                {
+                    plotAOI(globalTube.tube[hypotheses.hypotheses[i].index].subTubes2[iTest], hypotheses.hypotheses[i].index, 10, dynamicMap.markers.size(), p*0.95+0.05, "AoIMap2", hypotheses.hypotheses[i].pStore, dynamicMap);
+                }
+                */
             }
         }
 
@@ -1619,25 +1688,26 @@ std::vector<KalmanFilter> humanFilters, int humanConsidered, double xRobot, doub
         for (int i = 0; i<tubesH.size(); i++) {
                 for (int j = 0; j<tubesH[i].tube.size();j++) {
                     // if (hypotheses.hypotheses[i].index==15) {
-                    plotTube(tubesH[i].tube[j].main,20,2,dynamicMap.markers.size(),0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*1.0+0.00,"dynamicMap",dynamicMap, markerLifetime);
+                        // TODO: proper indexing of the tubes: now these are not always indexed correctly such that old tubes may be visualized consistently
+                    plotTube(tubesH[i].tube[j].main,20,N_STREAMLINES_TUBES,dynamicMap.markers.size(),0,0,0.0,0.0,1.0,hypotheses.hypotheses[i].p*1.0+0.00,"dynamicMap",dynamicMap, markerLifetime);
                     //plotTube(hip_msgs::singleTube tube, int n1, int n2,int subID, bool rel, bool sub,double r, double g, double b, double a, string ns,visualization_msgs::MarkerArray &map, double markerLifetime) {
                     for (int z = 0; z<tubesH[i].tube[j].subTubes0.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubes0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMap0",dynamicMap, markerLifetime);
+                        plotTube(tubesH[i].tube[j].subTubes0[z],20,N_STREAMLINES_TUBES,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMap0",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubes1.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubes1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMap1",dynamicMap, markerLifetime);
+                        plotTube(tubesH[i].tube[j].subTubes1[z],20,N_STREAMLINES_TUBES,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMap1",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubes2.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubes2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMap2",dynamicMap, markerLifetime);
+                        plotTube(tubesH[i].tube[j].subTubes2[z],20,N_STREAMLINES_TUBES,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMap2",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubesB0.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubesB0[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMapB0",dynamicMap, markerLifetime);
+                        plotTube(tubesH[i].tube[j].subTubesB0[z],20,N_STREAMLINES_TUBES,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[0]*1.0+0.0,"dynamicMapB0",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubesB1.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubesB1[z],20,2,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMapB1",dynamicMap, markerLifetime);
+                        plotTube(tubesH[i].tube[j].subTubesB1[z],20,N_STREAMLINES_TUBES,dynamicMap.markers.size(),0,1,0.0,0.0,1.0,hypotheses.hypotheses[i].pSub[1]*1.0+0.0,"dynamicMapB1",dynamicMap, markerLifetime);
                     }
                     for (int z = 0; z<tubesH[i].tube[j].subTubesB2.size();z++) {
-                        plotTube(tubesH[i].tube[j].subTubesB2[z],20,2,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMapB2",dynamicMap, markerLifetime);
+                        plotTube(tubesH[i].tube[j].subTubesB2[z],20,N_STREAMLINES_TUBES,dynamicMap.markers.size(),0,1,1.0,0.0,0.0,hypotheses.hypotheses[i].pSub[2]*1.0+0.0,"dynamicMapB2",dynamicMap, markerLifetime);
                     }
                     // }
                 }
@@ -2683,3 +2753,346 @@ void vectorFieldMap::initializeMap() {
     createGraphShort(globalTube, G);
     cout<<"Static map created"<< endl;
 }
+
+/*
+void vectorFieldMap::initializeMap() {
+    cout<<"initialize map..."<< endl;
+    TBCS TBC;
+    hip_msgs::lines lines;
+    hip_msgs::line lineTemp;
+
+    robot.x = 6.5;
+    robot.y = 8.5;
+    robot.l = 1.2;
+    robot.b = 0.75;
+    robot.theta = M_PI;
+    robot.df = 2.0;
+    robot.db = 2.0;
+    robot.dsMax = 1.0;
+    robot.dMax = 3.0;
+
+    human.x = 6.5;
+    human.y = 8.2;
+    human.r = 3.0;
+    human.dMax = 4.0;
+
+    TBC.i = -1;
+    
+    lineTemp = createLineTemp(-5.9,-5.9,0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(-8.4,-8.4,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+    linesToTube(lines,globalTube,0,TBC,0);
+
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(-8.5,-8.5,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+    linesToTube(lines,globalTube,0,TBC,1);
+
+    lineTemp = createLineTemp(-5.9,-5.9,0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(-5.9,-4.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(-5.9,-4.5,2.6,2.6,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    
+    lineTemp = createLineTemp(-5.9,-5.9,0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(-4.5,-4.5,0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(-5.9,-4.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    
+    lineTemp = createLineTemp(-4.5,-4.5,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,0.0,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+//
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(0.0,2.5,0.0,0.0,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,0.0,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(0.0,2.5,-0.1,-0.1,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // linesToTube(lines,globalTube,0,TBC,1);
+    
+    lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(2.2,2.2,0,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    
+    // lineTemp = createLineTemp(0.0,0.0,0,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // linesToTube(lines,globalTube,0,TBC,0);
+    // lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,2.5,0.0,0.0,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+
+    
+    lineTemp = createLineTemp(0.0,2.5,-0.1,-0.1,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    // lines.line.push_back(lineTemp);
+//
+    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,0.8,4.0,4.0,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+
+    lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(0.0,1.6,4.0,4.0,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(0.0,2.5,7.3,7.3,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(0.0,2.5,9.3,9.3,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(0.0,2.5,9.4,9.4,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    
+    // lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // linesToTube(lines,globalTube,0,TBC,0);
+    
+    // lineTemp = createLineTemp(0.0,2.5,2.5,2.5,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // lineTemp = createLineTemp(0.0,2.3,0.0,0.0,0.0,0.0);
+    // lines.line.push_back(lineTemp);
+
+    // linesToTube(lines,globalTube,0,TBC,0);
+    
+    lineTemp = createLineTemp(0.0,2.5,7.3,7.3,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(2.5,2.5,7.3,9.3,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(2.5,4.8,7.3,7.3,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(2.5,4.8,7.2,7.2,0.0,0.0);
+    lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    
+    lineTemp = createLineTemp(2.5,4.8,7.3,7.3,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(4.8,4.8,7.3,9.3,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(2.5,2.5,7.3,9.3,0.0,0.0);
+        lines.line.push_back(lineTemp);
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(0.0,2.5,9.3,9.3,0.0,0.0);
+        lines.line.push_back(lineTemp);
+    linesToTube(lines,globalTube,0,TBC,0);
+
+    
+    lineTemp = createLineTemp(4.8,4.8,7.3,9.3,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(7.3,7.3,7.3,9.3,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(7.3,9.5,7.3,7.3,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(7.3,9.5,2.5,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(9.5,9.5,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(9.6,9.6,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    
+    lineTemp = createLineTemp(9.5,9.5,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(7.3,7.3,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(7.3,9.3,2.5,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    
+    lineTemp = createLineTemp(7.3,7.3,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(6.88,6.88,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(4.8,4.8,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(5.43,6.25,0.0,0.0,M_PI/3.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(5.43,6.25,-0.1,-0.1,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    
+    lineTemp = createLineTemp(5.43,6.25,0.0,0.0,0.0,-M_PI/3.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(6.88,6.88,0.0,2.5,M_PI/3.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+    
+    lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(2.5,4.8,2.5,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,0);
+        lines.line.push_back(lineTemp);
+    
+    lineTemp = createLineTemp(2.5,4.8,2.6,2.6,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    linesToTube(lines,globalTube,0,TBC,1);
+    
+    lineTemp = createLineTemp(2.5,4.8,2.5,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(4.8,4.8,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+    linesToTube(lines,globalTube,0,TBC,0);
+    
+    lineTemp = createLineTemp(2.5,2.5,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+
+    lineTemp = createLineTemp(4.8,4.8,0.0,2.5,0.0,0.0);
+        lines.line.push_back(lineTemp);
+    linesToTube(lines,globalTube,0,TBC,0);
+
+    double markerLifetime = -1;
+    for (int i=0;i<globalTube.tube.size();i++) {
+        plotTube(globalTube.tube[i].main,20,5,staticMap.markers.size(),0,0,1.0,1.0,1.0,0.8,"staticMapTubes",staticMap, markerLifetime);
+    }
+    createGraph(globalTube, G);
+    createGraphShort(globalTube, G);
+    cout<<"Static map created"<< endl;
+}
+*/

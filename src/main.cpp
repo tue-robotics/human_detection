@@ -75,20 +75,23 @@ int main(int argc, char** argv)
                 hip_msgs::PoseVel humanPosVel = rosNode.humanFilters[iHumans].predictPos(rosNode.humanFilters[iHumans].getLatestUpdateTime() );
 
 
-//                std::cout << "main, iHumans = " << iHumans << "/" << rosNode.humanFilters.size() << " humanPosVel.x = " << humanPosVel.x << " humanPosVel.y = " << humanPosVel.y << std::endl;
+//                std::cout << "\n\n\n main, iHumans = " << iHumans << "/" << rosNode.humanFilters.size() << " humanPosVel.x = " << humanPosVel.x << " humanPosVel.y = " << humanPosVel.y << std::endl;
 
                 map.updateHypotheses(//humanPosVel.x, humanPosVel.y, humanPosVel.vx, humanPosVel.vy, 
                                     rosNode.humanFilters, iHumans,
                                     rosNode.robotPose.pose.pose.position.x, rosNode.robotPose.pose.pose.position.y, yawRobot, rosNode.semanticMapFrame,
                                     rosNode.semanticMapFrame, MARKER_LIFETIME);
 
-                std::string ns = "Hypotheses_Human" +  std::to_string(iHumans);
+//                std::string ns = "Hypotheses_Human" +  std::to_string(iHumans);
                 rosNode.publishHypotheses(map.hypotheses, ns, rosNode.humanFilters[iHumans]);
                 map.readMap(staticMarkers,dynamicMarkers);
 
                 for(unsigned int iMarker = 0; iMarker < dynamicMarkers.markers.size(); iMarker++)
                 {
                     visualization_msgs::Marker marker = dynamicMarkers.markers[iMarker];
+// TODO check object ID if string is empty
+// 
+
                     marker.ns = marker.ns + "object" + std::to_string(iHumans);
                     dynamicMarkers.markers[iMarker] = marker;
                 }
