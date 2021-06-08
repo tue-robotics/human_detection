@@ -82,7 +82,7 @@ int main(int argc, char** argv)
                                     rosNode.robotPose.pose.pose.position.x, rosNode.robotPose.pose.pose.position.y, yawRobot, rosNode.semanticMapFrame,
                                     rosNode.semanticMapFrame, MARKER_LIFETIME);
 
-//                std::string ns = "Hypotheses_Human" +  std::to_string(iHumans);
+                std::string ns = "Hypotheses_Human" +  std::to_string(iHumans);
                 rosNode.publishHypotheses(map.hypotheses, ns, rosNode.humanFilters[iHumans]);
                 map.readMap(staticMarkers,dynamicMarkers);
 

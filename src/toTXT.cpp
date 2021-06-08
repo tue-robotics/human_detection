@@ -28,7 +28,7 @@
 using namespace std;
 tf2_ros::Buffer tfBuffer;
 
-std::string storeDir = "/home/wouter/Pictures/testData/";
+std::string storeDir = "/home/ropod/Pictures/testData/";
 
 hip_msgs::hypotheses hypothesesList;
 hip_msgs::PoseVel humanPosVel;
@@ -79,6 +79,7 @@ int main(int argc, char** argv)
 //    std::cout << "toText: time = " << time << " timestring = " << timeString << std::endl;
 
     fileP0.open(storeDir + "hypothesesP0AOILRC" + timeString + ".csv");
+//std::cout <<"file open = " << fileP0.is_open() << std::endl;
     fileP0L.open(storeDir + "hypothesesP0AOIL" + timeString + ".csv");
     fileP0R.open(storeDir + "hypothesesP0AOIR" + timeString + ".csv");
     fileP0C.open(storeDir + "hypothesesP0AOIC" + timeString + ".csv");
